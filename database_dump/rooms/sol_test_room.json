@@ -1,0 +1,11 @@
+{
+  "_id": "sol_test_room",
+  "name": "Testareal",
+  "description": "Kennt ihr Area 51? Hier gehts das selbe ab.",
+  
+  "size": [100,100],
+  "objects" : [
+    [ 0, 0, 5, "tree", []],
+    [ 10, 10, 5, "tree", []]
+  ]
+}

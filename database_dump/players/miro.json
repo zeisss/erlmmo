@@ -1,0 +1,18 @@
+{
+  "_id": "miro",
+  "name": "Miro",
+  "location": ["sol_start_room", 0, 0],
+  
+  "inventory": [
+    {
+        "name": "Schwert der nördlichen Winde",
+        "description": "Ein wunderschönes Schwert was unheimlich scharf aussieht.",
+        "type": "one-hand-weapon"
+    },
+    {
+        "name": "Brot",
+        "description": "Ein wirklich leckeres Stück Brot",
+        "type": "object"    
+    }
+  ]
+}

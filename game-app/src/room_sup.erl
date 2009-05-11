@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% File    : main_sup.erl
+%%% File    : room_sup.erl
 %%% Author  : Stephan Zeissler
 %%% Description :
 %%%  This module is a supervisor starting a number of child supervisors.
@@ -8,7 +8,7 @@
 %%%  ??
 %%%
 %%%-------------------------------------------------------------------
--module(gs_sup).
+-module(room_sup).
 -behaviour (supervisor).
 
 %% API
@@ -43,7 +43,7 @@ stop() ->
 			true = exit(Pid, shutdown),
 			ok
 	end.
-	
+    
 %%====================================================================
 %% Supervisor callbacks
 %%====================================================================
@@ -57,13 +57,11 @@ stop() ->
 %% specifications.
 %%--------------------------------------------------------------------
 init([]) ->
-	%TcpSup = {gs_tcp_sup, {gs_tcp_sup, start_link, []}, permanent, 10, supervisor, gs_tcp_sup:used_modules()},
-	%Authenticator = {gs_authenticator, 
-	%					{gs_authenticator, start_link, []}, permanent, 10, worker, 
-	%					 gs_authenticator:used_modules()},
-	
+	Room = {room_server, {room, start_link, []}, temporary, 10, worker, []},
 	% More childs ....s
 	% ...
-	ChildSpec = [],
-	{ok, {{rest_for_one, 3, 30}, ChildSpec}}.
+	ChildSpec = [
+	   Room
+	],
+	{ok, {{simple_one_for_one, 3, 30}, ChildSpec}}.
 	

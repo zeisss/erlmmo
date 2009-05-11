@@ -1,0 +1,46 @@
+moinz-couchdb command line tools
+================================
+
+This describes the moinz-couchdb command line tools, to be exact couchdb-export.py and couchdb-import.py.
+
+Common to both commands are the options '-s'/'--server' and '-p'/'--port' to specify the hostname and port of the couchdb server. By default the tools try to connect to 'localhost:5984'. To change them, provide the new values via the options:
+ 
+ couchdb-export.py --server=couchdb.acme.com --port 8080 
+
+Exporting
+---------
+
+The command 'couchdb-export.py' performs an export of all documents in all databases if not other specified. Currently you can give the names of databases as arguments, the documents are not filterable. The tool creates a subfolder under the target directory ('-d' or . by default) for every database and a '*id*.json' file for each document. 
+The folders are created when necessary but not purged. You must do this yourself.
+
+[NOTE]
+The document read from the server is written the file as received from the server except of the '_rev' field, which gets removed to make reimporting these data later easier.
+
+Importing
+---------
+
+The 'couchdb-import.py' command works similar to the export command. You can specify a source directory with the '-d'/'--dir' where the tool looks at easch subfolder to import into a database. The name of the directory is used as the database name. If the database does not exists, it gets created. Each file is imported as a document. The id of the document is looked up from the content of the file. As all couchdb documents are dictionaries, the script checks for an '_id' field in the document.
+
+.Example helloworld.json:
+ {
+   '_id' : 'hello',
+   'text': 'Hello World!'
+ }
+
+If no id is found in the document, the tool lets the server create an id for the document. If there is already a document with the given id, an error is raised and the document is skipped. If you want to overwrite these documents, specify the -f/--force option on the command line.
+
+Examples
+--------
+
+.Exports all databases of the server
+ >>> couchdb-export.py --server=couchdb.local.net -p 8080 -d dump/ 
+ 
+.Export only the database mydatabase1 from localhost
+ >>> couchdb-export.py -d dump/ mydatabase1
+
+.Import the documents from dump/mydatabase1/ and dump/mydatabase2/
+ >>> couchdb-import.py --server=couchdb.local.net -p 8080 -s dump/ -f mydatabase1 mydatabase2
+ 
+License 
+-------
+GPLv2

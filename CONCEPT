@@ -1,0 +1,112 @@
+
+Abstract:
+---------
+This describes the several components of my little mmo project as well what they do and how they interact.
+
+Components:
+-----------
+ * Login-app: An erlang application serving a socket server for user authentication. Gives out tickets for authenticated users
+ * Chat-app: An erlang server where user with tickets can connect and chat with each other
+ * Game-app: An erlang server where the user can connect and walk around in a virtual world. 
+ * Client: A JavaFX Client for the enduser. Provides an interface for the 3 servers above.
+ * WWW: A bunch of php scripts to give the users an administration tool for their accounts.
+ * DB: A Couchdb storing the data for the 3 app servers above.
+ 
+ * Toolchain: Commandline tools for Import/Export of a CouchDB (nothing really game related)
+ * Stomp-Smtp-Transport: Reads messages from a stomp queue and sends them out via smtp
+ 
+Technologies so far: PHP, Erlang, CouchDB(REST), Python, Java, JavaFX
+
+[NOTE]
+The different server applications are all merged in a single erlang application. Which node executes what component(s) is determined by the configuration.
+ 
+Login-app:
+~~~~~~~~~~
+Authenticates the user against the database.
+
+Features:
+
+ * Gives out the MOTD 
+ * Creates new users in the database
+ * Users send name + password, Server sends back a ticket, similar to a cookie in web apps
+ * If the user cannot be authenticated, an error is returned
+ * All results are JSON objects
+ 
+Chat-app:
+~~~~~~~~~
+The chat servers to server a chat support between the players. Its a separate component because people
+tend to have a lot of chattering and with a separate server it does not disturb the normal gameplay. 
+Further its easier to watch at.
+
+WWW:
+~~~~
+Provides a web interface to the database and the server processes. 
+
+Actions:
+
+* Configure the MOTD
+* Administrate the user base (Locking accounts, ..)
+* Read logs
+
+
+Database:
+~~~~~~~~~
+The database is a REST database (CouchDB). For details about the structure see the next chapter.
+
+Toolchain:
+~~~~~~~~~~
+The toolchain provides a few commandline scripts for interacting with the database. 
+Its main purpose is to import default values into the database and perform some kind of export
+and search interface for debugging.
+
+Databases:
+----------
+
+Accounts
+~~~~~~~~
+* loginname : string()
+* loginpassword : string()
+* email : string()
+* openid : string()
+* players : [string()]
+
+Players
+~~~~~~~
+* name : string()
+* description : string()
+* location : [ room : string(), x: int(), y: int()]
+
+Domains
+~~~~~~~
+* name : string()
+* rooms : [ string() ]
+* default_room : string()
+
+Rooms
+~~~~~
+Each document describes a room and its default content. 
+
+* name : string()
+* description : string()
+* size : [x : int(), y : int()]
+* objects : [ [x : int(), y : int(), size : int(), type : string(), arguments : [] ] ],
+* doors : [ [name : string(), next_room_id : string()] ]
+
+Config
+~~~~~~
+Global configuration values. The document id works as the key.
+
+* value : string()
+
+Runtime Tables:
+~~~~~~~~~~~~~~~
+These databases are filled at runtime are not used for persistance. They provide a runtime information about the system, e.g. the number of connected clients, running components and so on.
+
+Sessions:
+^^^^^^^^^
+Which users / players are currently connected.
+
+Nodes:
+^^^^^^
+What processes runs on which node.
+ 

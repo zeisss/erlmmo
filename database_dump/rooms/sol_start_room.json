@@ -1,0 +1,11 @@
+{
+  "_id": "sol_start_room",
+  "name": "Startgebiet",
+  "description": "Hier starten unsere Helden, also Ihr. Legt los!",
+  
+  "size": [100,100],
+  "objects" : [
+    [ 0, 0, 5, "tree", []],
+    [ 10, 10, 5, "tree", []]
+  ]
+}

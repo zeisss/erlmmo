@@ -1,62 +1,35 @@
-%%%-------------------------------------------------------------------
-%%% File    : area.erl
-%%% Author  : ZeissS <zeisss@moinz.de>
-%%% Description : The area server.
-%%%
-%%%-------------------------------------------------------------------
--module(area_server).
-
+-module(login_server).
+-define(SERVER, ?MODULE).
 -behaviour(gen_server).
 
-%% API
--export([start_link/0]).
+-export([start_link/0, login/2]).
 
 %% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+-export([init/1, handle_call/3, 
+         handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
--define(SERVER, ?MODULE).
 
 %%====================================================================
 %% API
 %%====================================================================
-%%--------------------------------------------------------------------
-%% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
-%% Description: Starts the server
-%%--------------------------------------------------------------------
 start_link() ->
   Args = [],
   Opts = [],
-  gen_server:start_link({local, ?SERVER}, ?MODULE, Args, Ops).
+  gen_server:start_link({local, ?SERVER}, ?MODULE, Args, Opts).
 
-%%--------------------------------------------------------------------
-%% Function: join(Pid) -> ok
-%% Description: The given pid is added to the internal list of nodes 
-%%              beeing part of the area. The pid gets async send messages
-%%              about the state of the area.
-%%--------------------------------------------------------------------
-join(Pid) -> 
-	gen_server:call({local, ?SERVER}, {join, Pid}, 5000).
-
-%%--------------------------------------------------------------------
-%% Function: join(Pid) -> ok
-%% Description: The given pid is removed from the internal list of nodes
-%%              in the area.
-%%--------------------------------------------------------------------
-part(Pid) ->
-	gen_server:call({local, ?SERVER}, {part, Pid}, 5000).
-
+login(Username, Password) ->
+  gen_server:call(?SERVER, {login, Username, Password}).
 
 %%====================================================================
-%% gen_server callbacks
+%% CALLBACKs: gen_server
 %%====================================================================
-
 %%--------------------------------------------------------------------
 %% Function: init(Args) -> {ok, State} |
 %%                         {ok, State, Timeout} |
 %%                         ignore               |
 %%                         {stop, Reason}
-%% Description: Initiates the server
+%% Description: Initiates the server with its initial state.
 %%--------------------------------------------------------------------
 init([]) ->
   {ok, []}.
@@ -68,10 +41,14 @@ init([]) ->
 %%                                      {noreply, State, Timeout} |
 %%                                      {stop, Reason, Reply, State} |
 %%                                      {stop, Reason, State}
-%% Description: Handling call messages
+%% Description: Handling call messages (sync)
 %%--------------------------------------------------------------------
-handle_call({join, Pid}, From, State) ->
-  NewState = [State | Pid];
+handle_call({login, Username, Password}, _From, State) ->
+  % TODO: implement a real username check
+  
+  Reply = user_supervisor:start_user_server(1), % Replace 1 with the real user id
+
+  {reply, Reply, State};
 handle_call(_Request, _From, State) ->
   Reply = ok,
   {reply, Reply, State}.
@@ -80,7 +57,7 @@ handle_call(_Request, _From, State) ->
 %% Function: handle_cast(Msg, State) -> {noreply, State} |
 %%                                      {noreply, State, Timeout} |
 %%                                      {stop, Reason, State}
-%% Description: Handling cast messages
+%% Description: Handling cast messages (async)
 %%--------------------------------------------------------------------
 handle_cast(_Msg, State) ->
   {noreply, State}.
@@ -109,6 +86,7 @@ terminate(_Reason, _State) ->
 %% Description: Convert process state when code is changed
 %%--------------------------------------------------------------------
 code_change(_OldVsn, State, _Extra) ->
+
   {ok, State}.
 
 %%--------------------------------------------------------------------
