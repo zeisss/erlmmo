@@ -46,7 +46,7 @@ init([]) ->
 handle_call({login, Username, Password}, _From, State) ->
   % TODO: implement a real username check
   
-  Reply = user_supervisor:start_user_server(1), % Replace 1 with the real user id
+  Reply = player_sup:start_user_server(1), % Replace 1 with the real user id
 
   {reply, Reply, State};
 handle_call(_Request, _From, State) ->

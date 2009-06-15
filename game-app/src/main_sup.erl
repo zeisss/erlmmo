@@ -59,14 +59,11 @@ stop() ->
 init([]) ->
     %TcpHandler = {},
     %TcpSup = {},
-	LoginSup = {login_sup, {login_sup, start_link, []}, permanent, 10, supervisor, []},
+	LoginSup = {login_server, {login_server, start_link, []}, permanent, 10, worker, []},
 	PlayerSup = {player_sup, {player_sup, start_link, []}, permanent, 10, supervisor, []},
 	
-	% How are the room connected
-    WorldMap = {world_map, {world_map, start_link, []}, permanent, 10, worker, []},
-    
     % Forks a number of rooms
-    RoomSup = {room_sup, {room_sup, start_link, []}, permanent, 10, supervisor, []},
+    ZoneSup = {zone_sup, {zone_sup, start_link, []}, permanent, 10, supervisor, []},
     
 	ChildSpec = [
 	   % TcpListener, 
@@ -74,7 +71,7 @@ init([]) ->
 	   LoginSup,
 	   PlayerSup,
 	   WorldMap,
-	   RoomSup
+	   ZoneSup
 	],
 
 	{ok, {{rest_for_one, 3, 30}, ChildSpec}}.

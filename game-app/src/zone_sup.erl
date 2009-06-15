@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% File    : room_sup.erl
+%%% File    : zone_sup.erl
 %%% Author  : Stephan Zeissler
 %%% Description :
 %%%  This module is a supervisor starting a number of child supervisors.
@@ -8,7 +8,7 @@
 %%%  ??
 %%%
 %%%-------------------------------------------------------------------
--module(room_sup).
+-module(zone_sup).
 -behaviour (supervisor).
 
 %% API
@@ -57,7 +57,7 @@ stop() ->
 %% specifications.
 %%--------------------------------------------------------------------
 init([]) ->
-	Room = {room_server, {room, start_link, []}, temporary, 10, worker, []},
+	Room = {zone, {zone, start_link, []}, temporary, 10, worker, []},
 	% More childs ....s
 	% ...
 	ChildSpec = [
