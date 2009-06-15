@@ -1,25 +1,23 @@
+%%% -------------------------------------------------------------------
+%%% File: zone.erl
+%%% Description :%%%
+%%% 
+%%% Free like Bob Ross: In our little world ..
+%%%
+%%% ... we have a number of Zones arranged in a matrix of fields, just like in a chess game.
+%%% Objects can join a room with join() and tell the zone what they want to do (move, use..).
+%%% The zone interprets these actions once a second and sets the updated mapdata to the client 
+%%% using the player module.
+%%%
+%%% The implementation of the interface below is located in the zone_server.erl file.
+%%% -------------------------------------------------------------------
 -module(zone).
--behaviour(gen_server).
 
--include("erlmmo.hrl").
-
--export([start_link/1]).
--export([join/2, part/1, move/2, attack/2, use/2]).
+-compile(export_all).
 
 %%%
-% Free like Bob Ross: In our little world ..
-%
-% ... we have a number of rooms arranged in a matrix of fields, just like in a chess game.
-% Objects can join a room with join() and then move around to a wished location. 
-%
-%
-% The joined process gets send a number of messages when something in the room changes:
-%  {room_move, RoomPid, UserName, UserPid, Direction, NewPosition}
-%  {room_join, RoomPid, UserName, UserPid, Door, NewPosition}
-%  {room_part, RoomPid, UserName, UserPid, Door, OldPosition}
-%  {room_say, RoomPid, UserName, UserPid, Message}
-%
 % start_link(Id) -> {ok, RoomPid}
+%
 start_link(Id) ->
     gen_server:start_link({global, Id}, ?MODULE, [Id], []).
     
@@ -34,8 +32,9 @@ join(RoomPid, Direction) ->
     ok.
     
 %%%
-% The current pid parts the room which results in a broadcast room_part message 
-% to all joined pids. This is normally only used when the player goes offline.
+% The current pid parts the room. This is normally only used when the player goes offline.
+% If players leave a zone by moving to the outtest coordinates, the zone handles the parting
+% itself.
 % 
 % part(Pid) -> {ok, Info}
 %
@@ -52,24 +51,24 @@ move(RoomPid, Location) ->
    ok.
 
 %%%
-% Sets the command of the current Pid to use the given object.
+% Sets the command of the current Pid to say the given Message.
+% Chatting does NOT fall under the once command/100ms limit, as they
+% are executed directly.
 %
+% say(ZonePid, Who, Message) -> ok
+% Message = [char()]
 %
-use(RoomPid, ObjectId) ->
-    ok.
+say(ZonePid, Message) ->
+  gen_server:cast(ZonePid, {say, self(), Message}).
 
-attack(RoomPid, ObjectId) ->
-    ok.
-   
-raise_timer(RoomPid) ->
+%%%
+% Sends the Zone a tick, so it calculates all commands.
+% This is public for the external timer process. Do not use directly
+% until you know what you do (e.g. testing, debugging)
+%
+% perform_tick(Pid) -> ok
+%
+perform_tick(ZonePid) -> 
+	gen_server:cast(ZonePid, perform_tick).
   
-%% ===================================================================================== %%
 
--record(room_state, {name, objects=[], timer_ref}).
-
-init([Id]) ->
-   % TODO: Do something with the given Id for this room.
-   Tref = timer:apply_interval(?TIME_INTERVAL, ?MODULE, raise_timer, [self()]),
-   State = room_state{name=Id, timer_ref=Tref},
-   {ok, State}.
-    

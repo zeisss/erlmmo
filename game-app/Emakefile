@@ -1,2 +1,2 @@
-{"src/*", [native, debug_info, {i, "include"}, {outdir, "ebin"}]}. 
+{"src/*", [native, debug_info, {i, "include"}, {outdir, "ebin/"}]}. 
 

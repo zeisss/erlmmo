@@ -1,0 +1,21 @@
+# General:
+name: Lorkan-Wald
+name[en]: Lorkan Forest
+weather-strategy: static
+width: 2
+height: 1
+
+fields:
+  - x: 0
+    y: 0
+    name: Der unbekannte Wald
+    description: >
+      Ein wild wachsendes WaldstŸck zu dessen Boden durch die hohen 
+      dichgewachsenen BŠume kaum Licht durchdringt.
+      
+  - x: 1
+    y: 0
+    name: Der unbekannte Wald
+    description: >
+      Ein wild bewachsenes StŸck Wald in dem ohne das helfende Sonnenlicht kaum etwas 
+      zu erkennen ist.	
