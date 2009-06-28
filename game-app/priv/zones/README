@@ -1,0 +1,3 @@
+This folder contains the zone files describing each zone.
+To make a new zone, simply place it in this folder and 
+either restart the server or tell it to check for new zones.

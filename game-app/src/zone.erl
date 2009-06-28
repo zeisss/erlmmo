@@ -16,20 +16,24 @@
 -compile(export_all).
 
 %%%
-% start_link(Id) -> {ok, RoomPid}
+% start_link(FileId) -> {ok, ZonePid}
+% Path = FileId = [char()]
 %
-start_link(Id) ->
-    gen_server:start_link({global, Id}, ?MODULE, [Id], []).
+start_link() ->
+	start_link("priv/zones", "0_0_0_forest.yml").
+	
+start_link(Path, FileId) when is_list(FileId) ->
+	io:format("Starting zone ~s~n", [FileId]),
+    gen_server:start_link({global, list_to_atom(FileId)}, zone_server, [Path, FileId], []).
     
 %%%
-% Adds the current process to the room list which results in a broadcast room_join message
-% to all joined pids.
+% Adds the current process to the room list. The current process must implement the zone_object behaviour.
 %
-% join(Pid, Direction) -> ok
-% Direction -> atom() | {X,Y}
+% join(Pid, Location) -> ok
+% Location -> {X,Y}
 %
-join(RoomPid, Direction) ->
-    ok.
+join(ZonePid, Location) ->
+    gen_server:cast(ZonePid, {join, self(), Location}).
     
 %%%
 % The current pid parts the room. This is normally only used when the player goes offline.
@@ -38,17 +42,17 @@ join(RoomPid, Direction) ->
 % 
 % part(Pid) -> {ok, Info}
 %
-part(RoomPid) ->
-    ok.
+part(ZonePid) ->
+    gen_server:cast(ZonePid, {part, self()}).
 
 %%%
 % Sets the command of the current Pid to move to the given location.
 %
 % move(Pid, Location) -> ok
-% Location = {X,Y}
+% Direction = n | e | w | s | nw | ne | sw | se
 %
-move(RoomPid, Location) ->
-   ok.
+move(ZonePid, Direction) ->
+   gen_server:cast(ZonePid, {move, self(), Direction}).
 
 %%%
 % Sets the command of the current Pid to say the given Message.

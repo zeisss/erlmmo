@@ -1,4 +1,4 @@
--module(player_server).
+-module(player).
 -define(SERVER, ?MODULE).
 -behaviour(gen_server).
 

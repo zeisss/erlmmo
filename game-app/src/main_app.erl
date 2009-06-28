@@ -8,6 +8,8 @@
 %%%-------------------------------------------------------------------
 -behaviour(application).
 
+-include("erlmmo.hrl").
+
 -export([
      start/0,
      start/2,
@@ -22,9 +24,9 @@ start() ->
     start(normal, []).
     
 start(_Type, _Args) ->
-%    io:format("starting"),
-	{ok, Pid} = main_sup:start_link(),
-	{ok, Pid}.
+	% TODO: Parse the arguments and update the configuration
+	Config = #app_config{},
+	main_sup:start_link(Config).
 
 start_phase(_Phase, _StartType, _PhaseArgs) -> ok.
 

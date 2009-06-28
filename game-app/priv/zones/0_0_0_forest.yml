@@ -1,8 +1,6 @@
 # General:
 name: Lorkan-Wald
-name[en]: Lorkan Forest
-weather-strategy: static
-width: 2
+width: 3
 height: 1
 
 fields:
@@ -19,3 +17,7 @@ fields:
     description: >
       Ein wild bewachsenes StŸck Wald in dem ohne das helfende Sonnenlicht kaum etwas 
       zu erkennen ist.	
+      
+  - x: 2
+    y: 0
+    blocked: true
