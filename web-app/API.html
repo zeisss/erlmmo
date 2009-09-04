@@ -1,0 +1,45 @@
+<html>
+    <head>
+        <style>
+            pre {
+                border:1px black dashed;
+                background-color:#eeeee;
+                margin-left:10px;
+                padding:5px;
+            }
+        </style>
+    </head>
+    <body>
+        <div>
+            <h1>API</h1>
+            
+            The user is identified through the cookie, set during login.
+            
+            <h2>chat</h2>
+            <h3>send</h3>
+            <pre><code>POST /api/chat/send</code></pre>
+            
+            <p>Properties:</p>
+            <ul>
+                <li>message</li>
+            </ul>
+            
+            <p>Expectable Result:</p>
+            <pre><code>"OK"</code></pre>
+            
+            
+            <h3>get</h3>
+            <pre><code>GET /api/chat/get</code></pre>
+            
+            <p>Properties: none</p>
+            
+            <p>Expectable Result:</p>
+            <pre><code>
+            [
+                ["Player1", "Bla bla bla"],
+                ["Player2", "More bla bla bla"]
+            ]
+            </code></pre>
+        </div>
+    </body>
+</html>

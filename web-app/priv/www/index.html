@@ -1,0 +1,51 @@
+﻿<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/> 
+    <title>My Chat</title>
+    <script src="js/jquery-1.3.2.js" ></script>
+    <script>
+    	function sendMessage() 
+    	{
+    		msg = $("#chat_input").attr("value");
+			$.ajax({
+				url: "/test",
+				dataType: "json",
+				type: "GET",
+				success: function(result) {
+					for ( x in result) {
+						$("#chat_messages").append(
+							"<div><span>" + result[x][0] + ":</span> " + result[x][1] + "</div>"
+						);
+					}	
+				}
+			});
+    	}
+    	
+    	$(document).ready(function() {
+    		$("#chat_form").submit(sendMessage);
+    		return false;
+    	});
+    </script>
+    <style>
+    	#chat_form {
+    		border:1px black solid;    	
+    	}
+    	#chat_form #chat_messages {
+    		width:500px;
+    		height:200px;
+    	}
+    </style>	
+  </head>
+  <body>
+  	<div id="chat_form">
+  		<div id="chat_messages">
+  		
+  		</div>
+  		<div id="chat_user">
+  			<form action="#" id="chatform">
+	  			<input type="text" id="chat_input" size="20" /> <input id="chat_submit" type="submit" value="Say" />
+  			</form>
+  		</div>
+  	</div>
+  </body>
+</html>
