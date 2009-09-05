@@ -13,11 +13,69 @@
         <div>
             <h1>API</h1>
             
-            The user is identified through the cookie, set during login.
+            The user is identified through the &quot;sessionkey&quot; which should be send with every request (for POST requests in the body).
+            <h2>Errors</h2>
+            <p>During the calls to the API can happen a number of errors. If an error occurs an error object is returned instead of the normal result:</p>
+            <pre><code>
+                {
+                    "code": 404,
+                    "name": "The called method could not be found."
+                }
+            </code></pre>
+            <p>You can also detect an error on the returned http code. For a successfull call, the API returns 200, for any error 501.</p>
             
-            <h2>chat</h2>
+            <table border="1">
+                <tr>
+                    <th>Code</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td>001</td>
+                    <td>Invalid session key</td>
+                </tr>
+                <tr>
+                    <td>002</td>
+                    <td>Invalid request</td>
+                </tr>
+                <tr>
+                    <td>404</td>
+                    <td>Invalid method name</td>
+                </tr>
+                <tr>
+                    <td>500</td>
+                    <td>Internal server error</td>
+                </tr>
+            </table>
+            
+            <h2>Authentication</h2>
+            <h3>Login</h3>
+            <pre><code>POST /apiv1/auth/login</code></pre>
+            <p>Logs the user into the system and returns the sessionkey.</p>
+            
+            <p>Properties:</p>
+            <ul>
+                <li>username</li>
+                <li>password</li>
+            </ul>
+            <p>Expectable Result:</p>
+            <pre><code>
+                {"sessionkey":"112314123125123124123123RANDOMSTUFF", "timeout": 120}
+            </code></pre>
+            
+            <h3>Logoff</h3>
+            <pre><code>POST /apiv1/auth/logoff</code></pre>
+            <p>Logs the user out of the system and invalidates the sessionkey.
+                This is automatically called if no request to any of the api methods below are done in a period of two minutes.
+            </p>
+            <p>Result on a successfull logout:</p>
+            <pre><code>
+                "OK"
+            </code></pre>
+            
+            
+            <h2>Chat</h2>
             <h3>send</h3>
-            <pre><code>POST /api/chat/send</code></pre>
+            <pre><code>POST /apiv1/chat/send</code></pre>
             
             <p>Properties:</p>
             <ul>
@@ -25,20 +83,42 @@
             </ul>
             
             <p>Expectable Result:</p>
-            <pre><code>"OK"</code></pre>
+            <pre><code>
+                "OK"
+            </code></pre>
             
             
+            <h2>Events</h2>
             <h3>get</h3>
-            <pre><code>GET /api/chat/get</code></pre>
+            <pre><code>GET /apiv1/events/get</code></pre>
+            <p>Returns all happend events since the last call to this function. If no events are queued for this session, this call blocks until some events happen.</p>
             
             <p>Properties: none</p>
             
             <p>Expectable Result:</p>
             <pre><code>
             [
-                ["Player1", "Bla bla bla"],
-                ["Player2", "More bla bla bla"]
+                ["chat_message", ["Player1", "Bla bla bla"]],
+                ["chat_message, ["Player2", "More bla bla bla"]],
+                ["location", [123,123]],    # The new player location, only send when the user has (been) moved
+                ["map", [0,0, ... ]]        # One for each surrounding field that changed. If the player moved, this will be w*h events.
             ]
+            </code></pre>
+            
+            <h2>Zone</h2>
+            <h3>Move</h3>
+            <pre><code>POST /apiv1/zone/move</code></pre>
+            <p>Moves the player into the given <code>direction</code> when the next tick happens in the zone.
+                The new surrounding area is propagated to the player with the event &quot;map_update&quot;.</p>
+            
+            <p>Parameters:</p>
+            <ul>
+                <li>direction - The direction the player should move to. One of n, s, w, e, sw, se, nw, ne.</li>
+            </ul>
+            
+            <p>Result:</p>
+            <pre><code>
+            "OK"
             </code></pre>
         </div>
     </body>

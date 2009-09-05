@@ -7,7 +7,7 @@
 %
 % load(Path, Filename) -> {Name, Width, Height, Fields}
 % Filename = ZoneName = Name = Description = [char()]
-% Width = Height = X = Y = Blocking int()
+% Width = Height = X = Y = Blocking = int()
 % Fields = [Field]
 % Field = {X, Y, Name, Description, Blocking}
 %

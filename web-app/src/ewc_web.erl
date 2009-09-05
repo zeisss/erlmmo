@@ -1,5 +1,4 @@
 %% @author Stephan Zeissler <zeisss@moinz.de>
-%% @copyright YYYY author.
 
 %% @doc Web server for skel.
 
@@ -7,6 +6,9 @@
 -author('Stephan Zeissler <zeisss@moinz.de>').
 
 -export([start/1, stop/0, loop/2]).
+
+
+-define(CONTENT_TYPE, "text/html"). % TODO: Replace with application/json
 
 %% External API
 
@@ -22,29 +24,93 @@ stop() ->
 
 loop(Req, DocRoot) ->
     "/" ++ Path = Req:get(path),
-    case Req:get(method) of
-        Method when Method =:= 'GET'; Method =:= 'HEAD' ->
-            io:format("~s~n", [Path]),
-            case Path of
-            	"test" ->
-            		Req:ok({"application/json", [],mochijson2:encode(
-            			[
-            				[list_to_binary("Miro"),list_to_binary("Hi")]
-            			]
-            		)});
+    Method = Req:get(method),
+    
+    io:format("~s ~s~n", [Method, Path]),
+    
+    
+    case Path of
+        "apiv1/" ++ ApiCallv1 ->
+            % io:format("~s~n", [ApiCallv1]),
+            case handle_apiv1_request(Method, ApiCallv1, Req) of
+                {ok, Data} ->
+                    send_result(Req, Data);
+                {error, Code, Message} ->
+                    send_error(Req, Code, Message);
                 _ ->
-                    Req:serve_file(Path, DocRoot)
-            end;
-        'POST' ->
-            case Path of
-                _ ->
-                    Req:not_found()
+                    send_error(Req, 500, "Internal error")
             end;
         _ ->
-            Req:respond({501, [], []})
+            Req:serve_file(Path, DocRoot)
     end.
 
 %% Internal API
+
+handle_apiv1_request('POST', "auth/login", Req) ->
+    QS = Req:parse_post(),
+    Username = proplists:get_value("username", QS),
+    Password = proplists:get_value("password", QS),
+    case session_service:login(Username, Password) of
+        {ok, Sessionkey} ->
+            {ok, {struct, [{sessionkey, Sessionkey}, {timeout, 120}]}};
+        _ ->
+            {error, 600, "Unable to authenticate user."}
+    end;
+
+handle_apiv1_request('POST', "auth/logoff", Req) ->
+    QS = Req:parse_post(),
+    Sessionkey = proplists:get_value("sessionkey", QS),
+    
+    case session_service:logoff(Sessionkey) of
+        ok ->
+            {ok, 'OK'};
+        _ ->
+            {error, 600, "Unable to logoff user"}
+    end;
+    
+handle_apiv1_request('POST', "chat/send", Req) ->
+    QS = Req:parse_post(),
+    Message = proplists:get_value("message", QS),
+    SessionKey = proplists:get_value("sessionkey", QS),
+    
+    SessionPid = session_service:find(SessionKey),
+    
+    case SessionPid of
+        undefined -> {error, 001, "Invalid sessionkey."};
+        _ ->
+            % Async cast
+            ok = session_handler:chat_say(SessionPid, Message),
+            {ok, 'OK'}
+    end;
+            
+    
+        
+        
+handle_apiv1_request('GET', Call, _Req) when Call =:= "test"; Call =:= "test/test" ->
+    {ok, 'OK'};
+handle_apiv1_request(Method, ApiCall,_) when Method =:= 'GET'; Method =:= 'HEAD'; Method =:= 'POST' ->
+    {error, 404, "Unknown api method: " ++ ApiCall};
+handle_apiv1_request(_,_,_) ->
+    {error, 2, "Invalid request"}.
+
+
+send_error(Req, Code, Message) ->
+    Req:respond({
+        500,
+        [{"Content-Type", ?CONTENT_TYPE}],
+        mochijson2:encode(
+            {
+                struct,
+                [
+                    {"code", Code},
+                    {"message", list_to_binary(Message)}                    
+                ]
+            }
+        )
+    }).
+    
+send_result(Req, Data) ->
+    Req:respond({200, [{"Content-Type", ?CONTENT_TYPE}], mochijson2:encode(Data)}).
 
 get_option(Option, Options) ->
     {proplists:get_value(Option, Options), proplists:delete(Option, Options)}.

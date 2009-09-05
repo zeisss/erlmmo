@@ -50,6 +50,13 @@ init([]) ->
     Web = {ewc_web,
            {ewc_web, start, [WebConfig]},
            permanent, 5000, worker, dynamic},
-
-    Processes = [Web],
+           
+    %% -------------------
+    SessionService = {
+        session_service,
+        {session_service, start_link, []},
+        permanent, 5000, worker, dynamic
+    },
+    
+    Processes = [Web, SessionService],
     {ok, {{one_for_one, 10, 10}, Processes}}.
