@@ -27,7 +27,6 @@ find(Sessionkey) ->
     {ok, Pid} = gen_server:call(session_service, {find, Sessionkey}),
     Pid.
     
-    
 %% -----------------------------------------------------------------------------
 %% Internal Api:
 %
@@ -49,16 +48,16 @@ handle_call({login, Username, Password}, _From, State) ->
             SessionKey = gen_sessionkey(),
             
             % Start the session
-            {ok, SessionPid} = session_handler:start_link(Username),
+            {ok, SessionPid, Timeout} = session_handler:start_link(Username, SessionKey),
             % Add these to the propertylist (our state)
             NewState = [proplists:property(SessionKey, SessionPid)] ++ proplists:delete(SessionKey,State),
-            {reply, {ok, list_to_binary(SessionKey)}, NewState};
+            {reply, {ok, list_to_binary(SessionKey), Timeout}, NewState};
         _ ->
             {reply, error, State}
     end;
 
 handle_call({logoff, SessionKey}, _From, State) ->
-    io:format("Logoff user ~s~n", [proplists:lookup(SessionKey, State)]),
+    io:format("Logoff session ~s~n", [SessionKey]),
     NewState = proplists:delete(SessionKey, State),
     {reply, ok, NewState};
     

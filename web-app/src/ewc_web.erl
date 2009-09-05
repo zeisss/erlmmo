@@ -51,8 +51,8 @@ handle_apiv1_request('POST', "auth/login", Req) ->
     Username = proplists:get_value("username", QS),
     Password = proplists:get_value("password", QS),
     case session_service:login(Username, Password) of
-        {ok, Sessionkey} ->
-            {ok, {struct, [{sessionkey, Sessionkey}, {timeout, 120}]}};
+        {ok, Sessionkey, Timeout} ->
+            {ok, {struct, [{sessionkey, Sessionkey}, {timeout, Timeout}]}};
         _ ->
             {error, 600, "Unable to authenticate user."}
     end;
