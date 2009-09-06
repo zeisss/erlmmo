@@ -5,53 +5,32 @@ This describes the several components of my little mmo project as well what they
 
 Components:
 -----------
- * Login-app: An erlang application serving a socket server for user authentication. Gives out tickets for authenticated users
- * Chat-app: An erlang server where user with tickets can connect and chat with each other
- * Game-app: An erlang server where the user can connect and walk around in a virtual world. 
- * Client: A JavaFX Client for the enduser. Provides an interface for the 3 servers above.
- * WWW: A bunch of php scripts to give the users an administration tool for their accounts.
- * DB: A Couchdb storing the data for the 3 app servers above.
+ * web-app: An erlang mochiweb application providing the JS userinterface and the REST Api to interact with the game
+ * zone-app: An erlang server providing the backend for all the stuff
+ * DB: A Couchdb storing the data for the app servers above.
  
- * Toolchain: Commandline tools for Import/Export of a CouchDB (nothing really game related)
+ * couchdb-tools: Commandline tools for Import/Export of a CouchDB (nothing really game related)
  * Stomp-Smtp-Transport: Reads messages from a stomp queue and sends them out via smtp
  
-Technologies so far: PHP, Erlang, CouchDB(REST), Python, Java, JavaFX
-
-[NOTE]
-The different server applications are all merged in a single erlang application. Which node executes what component(s) is determined by the configuration.
- 
-Login-app:
+web-app:
 ~~~~~~~~~~
-Authenticates the user against the database.
 
-Features:
+The web-app provides the web interface for the enduser. Upon on authentication a session process is 
+started for each user representing him in the zone. The JS based interface can perform API Call through
+HTTP to get updates or perform actions.
 
- * Gives out the MOTD 
- * Creates new users in the database
- * Users send name + password, Server sends back a ticket, similar to a cookie in web apps
- * If the user cannot be authenticated, an error is returned
- * All results are JSON objects
- 
-Chat-app:
+
+zone-app:
 ~~~~~~~~~
-The chat servers to server a chat support between the players. Its a separate component because people
-tend to have a lot of chattering and with a separate server it does not disturb the normal gameplay. 
-Further its easier to watch at.
 
-WWW:
-~~~~
-Provides a web interface to the database and the server processes. 
-
-Actions:
-
-* Configure the MOTD
-* Administrate the user base (Locking accounts, ..)
-* Read logs
+Each session is connected to a zone which represents the area where the player can move around and
+talk to other players.
 
 
 Database:
 ~~~~~~~~~
 The database is a REST database (CouchDB). For details about the structure see the next chapter.
+Used for the persistence of the system data.
 
 Toolchain:
 ~~~~~~~~~~
@@ -74,12 +53,12 @@ Players
 ~~~~~~~
 * name : string()
 * description : string()
-* location : [ room : string(), x: int(), y: int()]
+* location : [ zone : string(), x: int(), y: int()]
 
-Domains
+Zones
 ~~~~~~~
 * name : string()
-* rooms : [ string() ]
+* fields : [ string() ]
 * default_room : string()
 
 Rooms
@@ -101,12 +80,3 @@ Global configuration values. The document id works as the key.
 Runtime Tables:
 ~~~~~~~~~~~~~~~
 These databases are filled at runtime are not used for persistance. They provide a runtime information about the system, e.g. the number of connected clients, running components and so on.
-
-Sessions:
-^^^^^^^^^
-Which users / players are currently connected.
-
-Nodes:
-^^^^^^
-What processes runs on which node.
- 

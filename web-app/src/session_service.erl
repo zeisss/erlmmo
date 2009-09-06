@@ -43,7 +43,8 @@ handle_call({login, Username, Password}, _From, State) ->
     io:format("Login for user ~s~n", [Username]),
     
     case check_username(Username, Password) of
-        ok ->
+        ok -> %TODO: Store the username in the State and check for already logged in users
+            
             % Create a session key
             SessionKey = gen_sessionkey(),
             

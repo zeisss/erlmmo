@@ -38,7 +38,7 @@ handle_info(timeout, State = {Username, SessionKey, Messages}) ->
     
     session_service:logoff(SessionKey),
     
-    {stop, timeout, State};
+    {stop, normal, State};
     
 handle_info(_Info, State) ->
     {noreply, ok, State}.

@@ -57,25 +57,18 @@ stop() ->
 %% specifications.
 %%--------------------------------------------------------------------
 init([Config]) ->
-    
-    %TcpHandler = {},
-    %TcpSup = {},
-	LoginSup = {login_server, {login_server, start_link, []}, permanent, 10, worker, []},
-	PlayerSup = {player_sup, {player_sup, start_link, []}, permanent, 10, supervisor, []},
-	
     % Forks a number of zones
     ZoneSup = {zone_sup, {zone_sup, start_link, [{zone_files, Config#app_config.zone_files}]}, permanent, 10, supervisor, []},
     
-	ChildSpec = [
-	   % TcpListener, 
-	   % TcpSup,
-	   %LoginSup,
-	   %PlayerSup,
-	   % WorldMap,
-	   ZoneSup
-	],
+    ChildSpec = [
+       % TcpListener, 
+       % TcpSup,
+       %LoginSup,
+       % WorldMap,
+       ZoneSup
+    ],
 
-	{ok, {{rest_for_one, 3, 30}, ChildSpec}}.
+    {ok, {{rest_for_one, 3, 30}, ChildSpec}}.
 	
 	
 	

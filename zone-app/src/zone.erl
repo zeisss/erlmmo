@@ -5,7 +5,7 @@
 %%% Free like Bob Ross: In our little world ..
 %%%
 %%% ... we have a number of Zones arranged in a matrix of fields, just like in a chess game.
-%%% Objects can join a room with join() and tell the zone what they want to do (move, use..).
+%%% Players can join a room with join() and tell the zone what they want to do (move..).
 %%% The zone interprets these actions once a second and sets the updated mapdata to the client 
 %%% using the player module.
 %%%
@@ -20,10 +20,10 @@
 % Path = FileId = [char()]
 %
 start_link() ->
-	start_link("priv/zones", "0_0_0_forest.yml").
+    start_link("priv/zones", "0_0_0_forest.yml").
 	
 start_link(Path, FileId) when is_list(FileId) ->
-	io:format("Starting zone ~s~n", [FileId]),
+    io:format("Starting zone ~s~n", [FileId]),
     gen_server:start_link({global, list_to_atom(FileId)}, zone_server, [Path, FileId], []).
     
 %%%
@@ -31,7 +31,7 @@ start_link(Path, FileId) when is_list(FileId) ->
 %
 % join(Pid, Location) -> ok
 % Location -> {X,Y}
-%
+% TODO: Replace with zone_mob_info record
 join(ZonePid, Location) ->
     gen_server:cast(ZonePid, {join, self(), Location}).
     
@@ -56,7 +56,7 @@ move(ZonePid, Direction) ->
 
 %%%
 % Sets the command of the current Pid to say the given Message.
-% Chatting does NOT fall under the once command/100ms limit, as they
+% Chatting does NOT fall under the one command/100ms limit, as they
 % are executed directly.
 %
 % say(ZonePid, Who, Message) -> ok

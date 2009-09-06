@@ -9,18 +9,18 @@
 %% ===================================================================================== %%
 
 -record(zone_state, {name, 
-					 width,
-					 height,
-					 fields = [],				%% All dict of fields. {X,Y} => zone_field record
-					 joined_processes = [], 	%% [Pid, Location] of all joined processes. Used for chatting
-					 timer_ref}).
+		     width,
+                     height,
+                     fields,		% A dict of fields. {X,Y} => zone_field record
+		     joined_processes = [], 	% [Pid, Location] of all joined processes. Used for chatting
+		     timer_ref}).
 
 -record(zone_field, {x,y,
                      name,
-				 	 description, 
-				 	 blocked = 0, % 1 => blocked, 0 => free to walk around
-				 	 objects = []  % Holds all players and objects on the current field
-				 	 }).
+		     description, 
+		     blocked = 0, % 1 => blocked, 0 => free to walk around
+		     objects = []  % Holds all players and objects on the current field
+		    }).
 				 	
 -record(zone_player, {name, pid}).
 
@@ -32,7 +32,7 @@ init([Path, Id]) ->
    io:format("Zone"),
    io:format("~s starting.", [Id]),
    
-   {ZoneName, Width, Height, Fields} = zone_loader:load(Path, Id),
+   {ZoneName, Width, Height, FieldList} = zone_loader:load(Path, Id),
    
    % Reformat the given structure into our internal records
    NewFields = lists:foldl(
@@ -40,7 +40,7 @@ init([Path, Id]) ->
    		dict:store({X,Y}, #zone_field{x=X,y=Y,name=Name,description=Desc,blocked=Blocking}, Dict)
    	end,
    	dict:new(),
-   	Fields
+   	FieldList
    ),
    
    % Starts the timer that sends us a regular tick
