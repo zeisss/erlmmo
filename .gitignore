@@ -1,5 +1,8 @@
 CONCEPT.html
+log/*.log
 .metadata/
 couchdb-tools/dist
-game-app/.project
+zone-app/.project
+supervisord.pid
+supervisor.sock
 
