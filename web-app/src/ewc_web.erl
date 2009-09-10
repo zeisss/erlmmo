@@ -1,6 +1,6 @@
 %% @author Stephan Zeissler <zeisss@moinz.de>
 
-%% @doc Web server for skel.
+%% @doc Web server for Erlmmo Web-App
 
 -module(ewc_web).
 -author('Stephan Zeissler <zeisss@moinz.de>').
@@ -59,20 +59,24 @@ handle_apiv1_request('POST', "auth/login", Req) ->
 
 handle_apiv1_request('POST', "auth/logoff", Req) ->
     QS = Req:parse_post(),
-    Sessionkey = proplists:get_value("sessionkey", QS),
+    SessionKey = proplists:get_value("sessionkey", QS),
+    SessionPid = session_service:find(SessionKey),
     
-    case session_service:logoff(Sessionkey) of
-        ok ->
-            {ok, 'OK'};
+    case SessionPid of
+        undefined -> {error, 001, "Invalid sessionkey."};
         _ ->
-            {error, 600, "Unable to logoff user"}
+            case session_handler:logoff(SessionPid) of
+                ok ->
+                    {ok, 'OK'};
+                _ ->
+                    {error, 600, "Unable to logoff user"}
+            end
     end;
     
 handle_apiv1_request('POST', "chat/send", Req) ->
     QS = Req:parse_post(),
     Message = proplists:get_value("message", QS),
     SessionKey = proplists:get_value("sessionkey", QS),
-    
     SessionPid = session_service:find(SessionKey),
     
     case SessionPid of
@@ -82,9 +86,18 @@ handle_apiv1_request('POST', "chat/send", Req) ->
             ok = session_handler:chat_say(SessionPid, Message),
             {ok, 'OK'}
     end;
-            
     
-        
+handle_apiv1_request('GET', "event/get", Req) ->
+    QS = Req:parse_qs(),
+    SessionKey = proplists:get_value("sessionkey", QS),
+    SessionPid = session_service:find(SessionKey),
+    
+    case SessionPid of
+        undefined -> {error, 001, "Invalid sessionkey."};
+        _ ->
+            Events = session_handler:event_get(SessionPid),
+            {ok, Events}
+    end;
         
 handle_apiv1_request('GET', Call, _Req) when Call =:= "test"; Call =:= "test/test" ->
     {ok, 'OK'};
@@ -96,7 +109,7 @@ handle_apiv1_request(_,_,_) ->
 
 send_error(Req, Code, Message) ->
     Req:respond({
-        500,
+        200,
         [{"Content-Type", ?CONTENT_TYPE}],
         mochijson2:encode(
             {

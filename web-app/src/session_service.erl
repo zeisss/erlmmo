@@ -23,53 +23,92 @@ logoff(Sessionkey) ->
     gen_server:call(session_service, {logoff, Sessionkey}).
     
 %% find(Sessionkey) -> pid()
-find(Sessionkey) ->
-    {ok, Pid} = gen_server:call(session_service, {find, Sessionkey}),
-    Pid.
+find(SessionKey) ->
+    Tid = t_session,
+    
+    case ets:member(Tid, SessionKey) of
+        true ->
+            [{SessionKey, _Username, Pid, _Timeout}] = ets:lookup(Tid, SessionKey),
+            Pid;
+        _ ->
+            undefined
+    end.
+    
+    %{ok, Pid} = gen_server:call(session_service, {find, SessionKey}),
+    %Pid.
     
 %% -----------------------------------------------------------------------------
 %% Internal Api:
 %
 % Simply implementation: The state is a list of of {SessionKey, Pid} pairs. No sort, nothing
 %
-% TODO: better state implementation
-% TODO: Kick logged in users out
-
+% TODO: Replace the tuple in the table with a record
+%
 
 init(_Args) ->
-    {ok, []}.
+    Tid = ets:new(t_session, [set, protected, named_table]),
     
-handle_call({login, Username, Password}, _From, State) ->
+    {ok, Tid}.
+    
+handle_call({login, Username, Password}, _From, Tid) ->
     io:format("Login for user ~s~n", [Username]),
     
-    case check_username(Username, Password) of
-        ok -> %TODO: Store the username in the State and check for already logged in users
+    case player_repository:check_login(Username, Password, []) of
+        ok ->
+            Key = ets:foldl(
+                fun({SessionKey, ObjUsername, _Pid, _}, In) ->
+                    case Username of
+                        ObjUsername ->
+                            SessionKey;
+                        _ ->
+                            In
+                    end
+                end,
+                undefined,
+                Tid
+            ),
             
-            % Create a session key
-            SessionKey = gen_sessionkey(),
-            
-            % Start the session
-            {ok, SessionPid, Timeout} = session_handler:start_link(Username, SessionKey),
-            % Add these to the propertylist (our state)
-            NewState = [proplists:property(SessionKey, SessionPid)] ++ proplists:delete(SessionKey,State),
-            {reply, {ok, list_to_binary(SessionKey), Timeout}, NewState};
+            case Key of
+                undefined ->
+                    % Create a session key
+                    SessionKey = gen_sessionkey(),
+                    
+                    % Start the session
+                    {ok, SessionPid, Timeout} = session_handler:start_link(Username, SessionKey),
+                    
+                    ets:insert(
+                        Tid,
+                        {SessionKey, Username, SessionPid, Timeout}
+                    );
+                _ ->
+                    [{SessionKey, Username, _SessionPid, Timeout}] = ets:lookup(Tid, Key)
+                    
+            end,            
+            {reply, {ok, list_to_binary(SessionKey), Timeout}, Tid};
         _ ->
-            {reply, error, State}
+            {reply, error, Tid}
     end;
 
-handle_call({logoff, SessionKey}, _From, State) ->
+handle_call({logoff, SessionKey}, _From, Tid) ->
     io:format("Logoff session ~s~n", [SessionKey]),
-    NewState = proplists:delete(SessionKey, State),
-    {reply, ok, NewState};
     
-handle_call({find, SessionKey}, _From, State) ->
-    Pid = proplists:get_value(SessionKey, State),
-    {reply, {ok, Pid}, State};
+    ets:delete(Tid, SessionKey),
+    
+    {reply, ok, Tid};
+    
+handle_call({find, SessionKey}, _From, Tid) ->
+    case ets:member(Tid, SessionKey) of
+        true ->
+            [{SessionKey, _Username, Pid, _Timeout}] = ets:lookup(Tid, SessionKey),
+            {reply, {ok, Pid}, Tid};
+        _ ->
+            {reply, {ok, undefined}, Tid}
+    end;
     
 handle_call(_,_,State) ->
     {noreply, State}.
 
-terminate(Reason, State) ->
+terminate(_Reason, _State) ->
     ok.
     
 handle_cast(_,State) -> {noreply, State}.
@@ -77,14 +116,8 @@ handle_info(_,State) -> {noreply, State}.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 
-
-
 %% -----------------------------------------------------------------------------
 % Helper functions:
-check_username(Username, Password) ->
-    % TODO: Validate the user + password
-    ok.
-
 gen_sessionkey() ->
     gen_sessionkey(32).
     
