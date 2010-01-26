@@ -53,8 +53,8 @@ handle_apiv1_request('POST', "auth/login", Req) ->
     case session_service:login(Username, Password) of
         {ok, Sessionkey, Timeout} ->
             {ok, {struct, [{sessionkey, Sessionkey}, {timeout, Timeout}]}};
-        _ ->
-            {error, 600, "Unable to authenticate user."}
+        {error, Reason} ->
+            {error, 600, "Unable to authenticate user: " ++ atom_to_list(Reason)}
     end;
 
 handle_apiv1_request('POST', "auth/logoff", Req) ->

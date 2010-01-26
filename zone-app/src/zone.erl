@@ -27,45 +27,6 @@ start_link(Path, FileId) when is_list(FileId) ->
     gen_server:start_link({global, list_to_atom(FileId)}, zone_server, [Path, FileId], []).
     
 %%%
-% Adds the current process to the room list. The current process must implement the zone_object behaviour.
-%
-% join(Pid, Location) -> ok
-% Location -> {X,Y}
-% TODO: Replace with zone_mob_info record
-join(ZonePid, Location) ->
-    gen_server:cast(ZonePid, {join, self(), Location}).
-    
-%%%
-% The current pid parts the room. This is normally only used when the player goes offline.
-% If players leave a zone by moving to the outtest coordinates, the zone handles the parting
-% itself.
-% 
-% part(Pid) -> {ok, Info}
-%
-part(ZonePid) ->
-    gen_server:cast(ZonePid, {part, self()}).
-
-%%%
-% Sets the command of the current Pid to move to the given location.
-%
-% move(Pid, Location) -> ok
-% Direction = n | e | w | s | nw | ne | sw | se
-%
-move(ZonePid, Direction) ->
-   gen_server:cast(ZonePid, {move, self(), Direction}).
-
-%%%
-% Sets the command of the current Pid to say the given Message.
-% Chatting does NOT fall under the one command/100ms limit, as they
-% are executed directly.
-%
-% say(ZonePid, Who, Message) -> ok
-% Message = [char()]
-%
-say(ZonePid, Message) ->
-  gen_server:cast(ZonePid, {say, self(), Message}).
-
-%%%
 % Sends the Zone a tick, so it calculates all commands.
 % This is public for the external timer process. Do not use directly
 % until you know what you do (e.g. testing, debugging)

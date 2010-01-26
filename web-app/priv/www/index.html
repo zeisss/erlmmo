@@ -2,29 +2,20 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/> 
     <title>My Chat</title>
-    <script src="js/jquery-1.3.2.js" ></script>
+    
+    <script src="js/jquery-1.3.2.js"></script>
+    <script src="js/erlmmo-api.js"></script>
+    
     <script>
-    	function sendMessage() 
-    	{
-    		msg = $("#chat_input").attr("value");
-			$.ajax({
-				url: "/test",
-				dataType: "json",
-				type: "GET",
-				success: function(result) {
-					for ( x in result) {
-						$("#chat_messages").append(
-							"<div><span>" + result[x][0] + ":</span> " + result[x][1] + "</div>"
-						);
-					}	
-				}
-			});
-    	}
-    	
-    	$(document).ready(function() {
-    		$("#chat_form").submit(sendMessage);
-    		return false;
-    	});
+      var gSessionkey;
+      
+      function sendMessage() {
+	chat_send(gSessionkey, $('#chat_input').get('value'));
+      }
+      $(document).ready(function() {
+	      $("#chat_form").submit(sendMessage);
+	      return false;
+      });
     </script>
     <style>
     	#chat_form {

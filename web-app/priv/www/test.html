@@ -66,7 +66,7 @@
         
         module("Chat");
         test("sending and receiving messages", function() {
-            expect(4);
+            expect(8);
             stop(6000);
             
             auth_login("Test2", "mypassword$", function(sessionkey, timeout) {
@@ -74,12 +74,24 @@
                 
                 event_get(sessionkey, function(event) {
                     ok(event != null, "Valid event received.");
+                    equals(event.length, 3, "Three events received");
+                    same(event[0], ["chat_message", "System", "Welcome!"], "Received welcome message");
+                    same(event[1], ["field_info", [0,0], []], "Received field info");
+                    same(event[2], ["map_info",  [ // Where you are
+                                        [-2,-2,0], [-2,-1,0], [-2,0,0], [-2,1,0], [-2,2,0],
+                                        [-1,-2,0], [-1,-1,0], [-1,0,0], [-1,1,0], [-1,2,0],
+                                        [0,-2,0], [0,-1,0], [0,0,1], [0,1,0], [0,2,0],
+                                        [1,-2,0], [1,-1,0], [1,0,0], [1,1,0], [1,2,0],
+                                        [2,-2,0], [2,-1,0], [2,0,0], [2,1,0], [2,2,0]
+                                    ]],
+                        "Received map info");
                     
                     chat_send(sessionkey, "Hi!", function(result) {
-                       equals(result, "OK");
+                        equals(result, "OK");
                        
                         event_get(sessionkey, function(event) {
-                           same(event, ["chat_message", "Test2", "Hi!"], "Receive our own chat message");
+                           
+                           same(event, [["chat_message", "Test2", "Hi!"]], "Receive our own chat message");
                            
                            auth_logoff(sessionkey);
                            
@@ -91,6 +103,55 @@
             });
         });
         
+        test("Muti session chat test", function() {
+            expect(4);
+            stop(1000); 
+            
+            auth_login("test1", "mypassword1", function(sessionkey1, timeout1){
+                ok(sessionkey1 != null);
+                
+                auth_login("test2", "mypassword2", function(sessionkey2, timeout2) {
+                    ok(sessionkey2 != null);
+                    
+                    chat_send(sessionkey1, "Hello World!", function(result) {
+                        equals(result, "OK");
+                        
+                        event_get(sessionkey2, function(result) {
+                            same(
+                                result,
+                                [
+                                    ["chat_message","System", "Welcome!"], // Intitial welcome message
+                                    ["field_info", [0,0], [["test1", "TODO"]] ],
+                                    ["map_info", [ // Where you are
+                                        [-2,-2,0], [-2,-1,0], [-2,0,0], [-2,1,0], [-2,2,0],
+                                        [-1,-2,0], [-1,-1,0], [-1,0,0], [-1,1,0], [-1,2,0],
+                                        [0,-2,0], [0,-1,0], [0,0,1], [0,1,0], [0,2,0],
+                                        [1,-2,0], [1,-1,0], [1,0,0], [1,1,0], [1,2,0],
+                                        [2,-2,0], [2,-1,0], [2,0,0], [2,1,0], [2,2,0]
+                                    ]],
+                                    ["chat_message", "test1", "Hello World!"]
+                                ],
+                                "Receive proper events"                                  
+                            );
+                            
+                            auth_logoff(sessionkey1, function() {
+                                auth_logoff(sessionkey2, function() {
+                                    start();        
+                                });
+                            });
+                            
+                            
+                        });
+                    });
+                });
+                
+            })
+        });
+        
+        module("Zone");
+        test("Ticks", function() {
+            
+        });
         
   });
   </script>

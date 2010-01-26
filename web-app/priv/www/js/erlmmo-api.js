@@ -22,11 +22,7 @@ function auth_logoff (sessionkey, callback) {
 
 
 function event_get(sessionkey, callback) {
-    jQuery.getJSON("/apiv1/event/get", "sessionkey=" + encodeURIComponent(sessionkey), function(result){
-       for (x in result) {
-            callback(result[x]);
-       }
-    });
+    jQuery.getJSON("/apiv1/event/get", "sessionkey=" + encodeURIComponent(sessionkey), callback);
 }
 
 

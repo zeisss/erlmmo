@@ -68,23 +68,29 @@ handle_call({login, Username, Password}, _From, Tid) ->
                 Tid
             ),
             
-            case Key of
+            Result = case Key of
                 undefined ->
-                    % Create a session key
+                    % Create a new session key
                     SessionKey = gen_sessionkey(),
                     
                     % Start the session
-                    {ok, SessionPid, Timeout} = session_handler:start_link(Username, SessionKey),
-                    
-                    ets:insert(
-                        Tid,
-                        {SessionKey, Username, SessionPid, Timeout}
-                    );
+                    case session_handler:start_link(Username, SessionKey) of
+                        {ok, SessionPid, Timeout} ->
+                            ets:insert(
+                                Tid,
+                                {SessionKey, Username, SessionPid, Timeout}
+                            ),
+                            
+                            {ok, list_to_binary(SessionKey), Timeout};
+                        {error, Reason} ->
+                            {error, Reason}
+                    end;
                 _ ->
-                    [{SessionKey, Username, _SessionPid, Timeout}] = ets:lookup(Tid, Key)
+                    [{SessionKey, Username, _SessionPid, Timeout}] = ets:lookup(Tid, Key),
+                    {ok, list_to_binary(SessionKey), Timeout}
                     
             end,            
-            {reply, {ok, list_to_binary(SessionKey), Timeout}, Tid};
+            {reply, Result, Tid};
         _ ->
             {reply, error, Tid}
     end;
