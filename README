@@ -3,7 +3,8 @@ Erlmmo
 
 Erlmmo is a small testproject for me to get started with erlang.
 Target is to have a small game, where people can connect and 
-talk to each other and play some games. For details see docs/CONCEPT.
+talk to each other and play some games. For details about the
+components see docs/CONCEPT.
 
 
 Licence
