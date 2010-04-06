@@ -54,12 +54,13 @@ content_types_provided(ReqData, State) ->
         ],
         ReqData, State
     }.
+    
 %%
 % 
 to_javascript(ReqData, State = #state{apikey=ApiKey}) ->
     {ok, Session} = session_master:find(ApiKey),
     
-    Events = Session:get_messages(),
+    Events = Session:get_messages_once(),
     
     Content = mochijson2:encode(Events),
     
