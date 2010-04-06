@@ -6,6 +6,10 @@ Target is to have a small game, where people can connect and
 talk to each other and play some games. For details about the
 components see docs/CONCEPT.
 
+Plannings
+---------
+I'm for now planning to implement the game as one erlang application, started in one virtual machine.
+If later needed, subprocesses are moved into separate processes.
 
 Licence
 -------
