@@ -19,7 +19,7 @@ test_login() ->
     
 test_simple_messages(Miro) ->
     % Test simple message handling
-    {ok, []} = Miro:get_messages_once(),
+    Miro:get_messages_once(),
     ok = Miro:add_message({test_message, "Hi"}),
     {ok, [{test_message, "Hi"}]} = Miro:get_messages_once(),
     {ok, []} = Miro:get_messages_once(),
@@ -47,14 +47,14 @@ test_multi_chatting(Miro) ->
     
     Miro:chat_join("Global"),
     timer:sleep(500),
-    Miro:get_messages_once(),
+    Miro:get_messages_once(), % Simple Clear 
     
     Anda:chat_join("Global"),
     
-    timer:sleep(500),
+    timer:sleep(1000),
+    
     Anda:get_messages_once(), % Simple Clear, since already tested above
     {ok, [{chat_join, "Global", "Andarya"}]} = Miro:get_messages_once(),
-    
     
     Anda:chat_send("Global", "Hi!"),
     timer:sleep(500),
@@ -72,7 +72,11 @@ t(Function) ->
     session_master:logout_all(),
     
     {ok, Session} = login(),
-    ok = apply(?MODULE, Function, [Session]),
+    case catch apply(?MODULE, Function, [Session]) of
+        ok -> ok;
+        Error ->
+            io:format("Error in test ~p:~n~p~n", [Function, Error])
+    end,
     ok = logout(Session).
     
     

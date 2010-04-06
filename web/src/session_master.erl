@@ -140,6 +140,7 @@ handle_cast(_Message, State) ->
 handle_info(timeout, State) ->
     io:format("Performing session timeout cleanup~n"),
     internal_kill_timeouts(State),
+    io:format(" done (timeout)~n"),
     {noreply, State, ?TIMEOUT}.
     
 terminate(_Reason, _State) ->
@@ -152,11 +153,10 @@ code_change(_OldVsn, State, _Extra) ->
 internal_kill_timeouts(State = #state{timeout_table=Tid}) ->
     internal_kill_timeouts(State, erlang:now(), ets:first(Tid)).
 
-internal_kill_timeouts(_, _, '$end_of_table') ->
-    io:format(" done (timeout)~n"),
-    ok;
+internal_kill_timeouts(_, _, '$end_of_table') -> ok;
 internal_kill_timeouts(State = #state{timeout_table=Tid}, Now, Session) ->
-    Timestamp = ets:lookup(Tid, Session),
+    [{Session, Timestamp}] = ets:lookup(Tid, Session),
+    io:format("Checking ~p~n", [Session]),
     
     Diff = timer:now_diff(Now, Timestamp),
     
@@ -167,7 +167,7 @@ internal_kill_timeouts(State = #state{timeout_table=Tid}, Now, Session) ->
         true -> ok
     end,
     
-    % continue with the next session
+    % continue with the next session in the list
     internal_kill_timeouts(State, Now, ets:next(Tid, Session)).
     
     
