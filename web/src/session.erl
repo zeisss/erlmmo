@@ -18,10 +18,11 @@ get_name() -> Name.
 %% -----------------------------------------------------------------------------
 
 add_message(Message) ->
-    io:format("~w~n", [Message]).
+    io:format("~w~n", [Message]),
+    session_master:session_add_message(THIS, Message).
 
 get_messages() ->
-    [].
+    session_master:session_get_messages(THIS).
 
 %% -----------------------------------------------------------------------------
 

@@ -4,11 +4,14 @@
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--record(state, {session_counter=0, table}).
+-export([session_add_message/2, session_get_messages/1]).
+
+-record(state, {session_counter=0, table, session_table}).
 
 -define(SERVER, {global, ?MODULE}).
 
 -define(TABLE, sessions).
+
 
 start_link() ->
     gen_server:start_link(?SERVER, ?MODULE, [], []).
@@ -37,12 +40,23 @@ find(ApiKey) ->
         Session -> {ok, Session}
     end.
 
+%%
+% INTERNAL API for session module.
+session_add_message(Session, Message) ->
+    gen_server:call(?SERVER, {session_add_message,Session, Message}).
+    
+%%
+% INTERNAL API for session module.
+session_get_messages(Session) ->
+    gen_server:call(?SERVER, {session_get_messages, Session}).
 
 % ------------------------------------------------------------------------------
 
 init([]) ->
     Tid = ets:new(?TABLE, [set, protected, {keypos,2}]),
-    {ok, #state{table=Tid}}.
+    SessionTid = ets:new(session_messages, [set, protected]),
+    
+    {ok, #state{table=Tid, session_table=SessionTid}}.
     
 handle_call({login, Name, Password}, From, State = #state{table=Tid}) ->
     case ets:match_object(Tid, {session, '_', Name}) of
@@ -74,11 +88,27 @@ handle_call({find, ApiKey}, _From, State = #state{table=Tid}) ->
         [Session] -> {reply, Session, State};
         [] -> {reply, no_session, State};
         Result -> {stop, {multiple_sessions_for_apikey, ApiKey, Result}, no_session, State}
-    end.
+    end;
     
     
+handle_call({session_add_message, Session, Message}, _From, State = #state{session_table=Tid}) ->
+    Messages = case ets:lookup(Tid, Session) of
+        [] -> [];
+        [{Session, Msgs}] -> Msgs;
+        _ -> []
+    end,
     
+    ets:insert(Tid, {Session, Messages ++ [Message]}),
+    {reply, ok, State};
     
+handle_call({session_get_messages, Session}, _From, State = #state{session_table=Tid}) ->
+    Messages = case ets:lookup(Tid, Session) of
+        [] -> [];
+        [{Session, Msgs}] -> Msgs
+    end,
+    true = ets:delete(Tid, Session),
+    
+    {reply, {ok, Messages}, State}.    
     
 handle_cast(_Message, State) ->
     {noreply, State}.
