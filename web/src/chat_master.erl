@@ -82,14 +82,14 @@ handle_cast({chat_part, Session, ChannelName}, State = #state{table=Tid}) ->
     {noreply, State}.
     
 
-handle_call({login, Name, Password}, From, State = #state{table=Tid}) ->
+handle_call(_Message, _From, State) ->
     {noreply, State}.
     
-handle_info(Message, State) ->
+handle_info(_Message, State) ->
     {noreply, State}.
     
-terminate(Reason, State) ->
+terminate(_Reason, _State) ->
     ok.
     
-code_change(OldVsn, State, Extra) ->
+code_change(_OldVsn, State, _Extra) ->
     {ok, State}.

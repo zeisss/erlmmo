@@ -61,15 +61,15 @@ handle_call({login, Name, Password}, From, State = #state{table=Tid}) ->
             ets:insert(Tid, NewSession),
             
             {reply, {ok, ApiKey}, State#state{session_counter=Counter+1}};
-        Error ->
+        _Error ->
             {reply, {error, failed_while_init_session}, State}
     end;
     
-handle_call({logout, ApiKey}, From, State = #state{table=Tid}) ->
+handle_call({logout, ApiKey}, _From, State = #state{table=Tid}) ->
     ets:delete(Tid, ApiKey),
     {reply, ok, State};
     
-handle_call({find, ApiKey}, From, State = #state{table=Tid}) ->
+handle_call({find, ApiKey}, _From, State = #state{table=Tid}) ->
     case ets:lookup(Tid, ApiKey) of
         [Session] -> {reply, Session, State};
         [] -> {reply, no_session, State};
@@ -80,14 +80,14 @@ handle_call({find, ApiKey}, From, State = #state{table=Tid}) ->
     
     
     
-handle_cast(Message, State) ->
+handle_cast(_Message, State) ->
     {noreply, State}.
     
-handle_info(Message, State) ->
+handle_info(_Message, State) ->
     {noreply, State}.
     
-terminate(Reason, State) ->
+terminate(_Reason, _State) ->
     ok.
     
-code_change(OldVsn, State, Extra) ->
+code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
