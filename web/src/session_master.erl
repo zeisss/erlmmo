@@ -68,7 +68,7 @@ init([]) ->
     
     {ok, #state{table=Tid, timeout_table=TimeoutTid, session_table=SessionTid}}.
     
-handle_call({login, Name, Password}, From, State = #state{table=Tid}) ->
+handle_call({login, Name, Password}, From, State = #state{table=Tid, timeout_table=TimeoutTid}) ->
     case ets:match_object(Tid, {session, '_', Name}) of
         [Session] -> session_logout(Session, State);
         [] -> ok
@@ -83,6 +83,7 @@ handle_call({login, Name, Password}, From, State = #state{table=Tid}) ->
     case NewSession:init() of
         ok ->
             ets:insert(Tid, NewSession),
+            ets:insert(TimeoutTid, {NewSession, erlang:now()}),
             
             {reply, {ok, ApiKey}, State#state{session_counter=Counter+1}, ?TIMEOUT};
         _Error ->
@@ -139,9 +140,13 @@ handle_cast(_Message, State) ->
     
 handle_info(timeout, State) ->
     io:format("Performing session timeout cleanup~n"),
-    internal_kill_timeouts(State),
-    io:format(" done (timeout)~n"),
-    {noreply, State, ?TIMEOUT}.
+    case internal_kill_timeouts(State) of
+        ok ->
+            io:format(" done (timeout)~n"),
+            {noreply, State, ?TIMEOUT};
+        Error ->
+            {stop, {error, while_performing_cleanup, Error}, State}
+    end.
     
 terminate(_Reason, _State) ->
     ok.
@@ -151,7 +156,10 @@ code_change(_OldVsn, State, _Extra) ->
     
     
 internal_kill_timeouts(State = #state{timeout_table=Tid}) ->
-    internal_kill_timeouts(State, erlang:now(), ets:first(Tid)).
+    ets:safe_fixtable(Tid, true),
+    Result = (catch internal_kill_timeouts(State, erlang:now(), ets:first(Tid))),
+    ets:safe_fixtable(Tid, false),
+    Result.
 
 internal_kill_timeouts(_, _, '$end_of_table') -> ok;
 internal_kill_timeouts(State = #state{timeout_table=Tid}, Now, Session) ->
@@ -162,7 +170,7 @@ internal_kill_timeouts(State = #state{timeout_table=Tid}, Now, Session) ->
     
     if
         % if session is older than 5 minutes, log it out
-        Diff > 1000 * 60 * 5 ->
+        Diff > 1000 * 1000 * 60 * 5 ->
             session_logout(Session, State);
         true -> ok
     end,
