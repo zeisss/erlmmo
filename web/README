@@ -1,1 +1,8 @@
 The deps/ folder contains a 'webmachine' symlink to the webmachine folder installed on my system. Modify as needed.
+
+Setup:
+------
+$ make
+$ ./start.sh
+
+Now, open http://localhost:8000 in your browser.

@@ -49,7 +49,7 @@
 	      'options': options,
 	      'error': error
 	    });
-	    MODEL.sessionkey = false; // We kill ourself
+	    MODEL.setSessionkey(false); // We kill ourself
 	  });
 	},
 	
@@ -68,7 +68,7 @@
 	  } else if ( event.type == "chat_send") {
 	    $("#chat_messages").append("<div>[" + event.name + "] <b>" + event.player + "</b>: " + event.message + "</div>" );
 	  } else {
-	    alert(event.type);  
+	    alert("Unknown Eventtype: " + event.type);  
 	  }
 	}
 	
@@ -101,7 +101,6 @@
 	  
 	  $("#login").click(function() {
 	    MODEL.login($("#username").val(), $("#password").val());
-	    
 	  });
 	  
 	  UI.init();
@@ -110,10 +109,10 @@
     <style>
     	#chat_form {
     	  border:1px black solid;
-	  left:20px;
-	  top:20px;
-	  width:400px;
-	  height:300px;
+	  bottom:20px;
+	  left:25%;
+	  width:50%;
+	  height:50%;
     	}
 	#chat_form .channels ul {
 	   display:inline;
@@ -159,7 +158,7 @@
 	
 	#window_pane .window {
 	  background-color:white;
-	  position:relative;
+	  position:absolute;
 	  overflow:auto;
 	}
 	
@@ -189,12 +188,13 @@
 	      </ul>
 	    </div>
   		<div id="chat_messages">
-  		
+		  
   		</div>
-  		<div id="chat_user">
-  			<form action="#" id="chatform">
-	  			<input type="text" id="chat_input" size="20" /> <input id="chat_submit" type="submit" value="Send" />
-  			</form>
+		<div id="chat_user">
+		    <form action="#" id="chatform">
+			<input type="text" id="chat_input" size="20" />
+			<input id="chat_submit" type="submit" value="Send" />
+		    </form>
   		</div>
   	</div>
       </div>
