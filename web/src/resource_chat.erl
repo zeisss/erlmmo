@@ -13,11 +13,11 @@
 % global: Important Message on all Systems (Admin only)
 %%
 -module(resource_chat).
--export([init/1, malformed_request/2, service_available/2, allowed_methods/2, process_post/2]).
+-export([init/1, malformed_request/2, resource_exists/2, service_available/2, allowed_methods/2, process_post/2]).
 
 -include_lib("webmachine/include/webmachine.hrl").
 
--record(state, {apikey, message, channel}).
+-record(state, {sessionkey, session, message, channel}).
 
 init([]) ->
     {ok,
@@ -40,8 +40,8 @@ allowed_methods(ReqData, State) ->
 %%
 % Checks that all parameters are given for the POST request
 malformed_request(ReqData, State) ->
-    ApiKey =        wrq:get_qs_value("apikey", ReqData),
-    case ApiKey of
+    SessionKey =        wrq:get_qs_value("apikey", ReqData),
+    case SessionKey of
         undefined -> {true, ReqData, State};
         _ -> 
             Message = wrq:get_qs_value("message", ReqData),
@@ -50,15 +50,23 @@ malformed_request(ReqData, State) ->
             case [Message, Channel] of
                 [undefined,_] -> {true, ReqData, State};
                 [_,undefined] -> {true, ReqData, State};
-                _ ->             {false, ReqData, State#state{apikey=ApiKey,message=Message,channel=Channel}}
+                _ ->             {false, ReqData, State#state{sessionkey=SessionKey,message=Message,channel=Channel}}
             end
     end.
        
+resource_exists(ReqData, State = #state{sessionkey=Sessionkey}) ->
+    case session_master:find(Sessionkey) of
+        {error, no_session} -> {false, ReqData, State};
+        {ok, Session} ->
+            {true, ReqData, State#state{session=Session}}
+    end.
+    
+
+
 % Lets do the real work
 % get the parameters
 % and process them through the session_master
-process_post(ReqData, State = #state{apikey=ApiKey, message=Message, channel=Channel}) ->
-    {ok, Session} = session_master:find(ApiKey),
+process_post(ReqData, State = #state{session=Session, message=Message, channel=Channel}) ->
     case Session:chat_send(Channel, Message) of
         ok ->
             NewReqData = wrq:set_resp_body(mochijson2:encode(<<"OK">>), ReqData),

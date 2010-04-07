@@ -7,18 +7,54 @@
     <script src="js/erlmmo-api.js"></script>
     
     <script>
-      UI = {
-	'logError': function(Error) {
-	  alert(Error);
+      MODEL = {
+	'sessionkey': false,
+	
+	'init': function() {
+	  setInterval(function() { MODEL.handle_events(); }, 1000);
 	},
 	
+	'login': function(username, password) {
+	  auth_login(username, password, function(sessionkey) {
+	    MODEL.setSessionkey(sessionkey);
+	  });
+	},
+	
+	'setSessionkey': function(sessionkey) {
+	  MODEL.sessionkey = sessionkey;	  
+	},
+	
+	
 	'handle_events': function() {
-	  event_get(gSessionkey, function(events) {
+	  
+	  if ( MODEL.sessionkey == false)
+	    return;
+	  
+	  event_get(MODEL.sessionkey, function(events) {
 	    for(event in events) {
-	      
 	      UI.handle_event(events[event]);
 	    }
 	  });
+	}
+      };
+      
+      UI = {
+	'init': function() {
+	  MODEL.init();  
+	  
+	  // Register AJAX Error Handler
+	  $('body').ajaxError(function(event, xml, options, error) {
+	    UI.logError({
+	      'event': event,
+	      'options': options,
+	      'error': error
+	    });
+	    MODEL.sessionkey = false; // We kill ourself
+	  });
+	},
+	
+	'logError': function(Error) {
+	  alert("Error: " + Error.error);
 	},
 	
 	'handle_event': function(event) {
@@ -36,14 +72,18 @@
 	  }
 	}
 	
+	
       };
       
-      gSessionkey = "---";
-      
-      function sendMessage() {
+      function sendChatMessage() {
+	if ( !MODEL.sessionkey)
+	{
+	  alert("Not logged in yet!");
+	  return false;
+	}
 	try {
 	  Text = $('#chat_input').val();
-	  chat_send(gSessionkey, "Global", Text);
+	  chat_send(MODEL.sessionkey, "Global", Text);
 	  $('#chat_input').val('');
 	} catch (E) {
 	  UI.logError(E);
@@ -53,22 +93,18 @@
       }
       
       $(document).ready(function() {
-	      $("#chatform").submit(sendMessage);
-	      
-	      auth_login("chat_test", "no_password", function(result) {
-		  gSessionkey = result;
-	      });
-	      
-	      $('body').ajaxError(function(event, xml, options, error) {
-		UI.logError({
-		  'event': event,
-		  'options': options,
-		  'error': error
-		});
-	      });
-	      
-	      
-	      setInterval(function() { UI.handle_events(); }, 1000);
+	  $("#chatform").submit(sendChatMessage);
+	  
+	  $("#window_pane .window .titlebar").bind('click', function(event) {
+	    
+	  });
+	  
+	  $("#login").click(function() {
+	    MODEL.login($("#username").val(), $("#password").val());
+	    
+	  });
+	  
+	  UI.init();
       });
     </script>
     <style>
@@ -79,37 +115,79 @@
 	  width:400px;
 	  height:300px;
     	}
+	#chat_form .channels ul {
+	   display:inline;
+	}
+	#chat_form .channels ul li {
+	  border:1px black solid;
+	}
+	
     	#chat_form #chat_messages {
-    	  width:500px;
-    	  height:200px;
-		
+	  position:absolute;
+	  top:40px;
+	  bottom:30px;
+	  left:0px;
+	  right:0px;
+	  overflow:auto;
     	}
+	#chat_form #chat_user {
+	  position:absolute;
+	  padding:2px;
+	  bottom:0px;
+	  left:0px;
+	  right:0px;
+	  height:30px;
+	}
+	
+	#navbar {
+	  top:0px;
+	  left:0px;
+	  right:0px;
+	  height:30px;
+	  color:white;
+	}
 	
 	
 	#window_pane {
-	  top:20px;
+	  top:35px;
 	  left:0px;
 	  bottom:0px;
 	  right:0px;
 	  position:absolute;
 	  background-color:gray;
 	}
+	
 	#window_pane .window {
 	  background-color:white;
 	  position:relative;
 	  overflow:auto;
 	}
+	
 	#window_pane .window .titlebar {
-	  
+	  border:1px black solid;
+	  color:white;
+	  font-weight:bold;
+	  background-color: #3287A2;
 	}
     </style>	
   </head>
   <body>
       <div id="navbar">
 	<a href="test.html">Tests</a>
+	<input id="username" />
+	<input type="password" id="password" />
+	<button id="login">Login</button>
       </div>
       <div id="window_pane">
   	<div id="chat_form" class="window">
+	    <div class="titlebar">
+	      Chat 
+	    </div>
+	    <div class="channels">
+	      <ul>
+		<li>Global</li>
+	      </ul>
+	    </div>
   		<div id="chat_messages">
   		
   		</div>

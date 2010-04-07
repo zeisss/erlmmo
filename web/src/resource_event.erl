@@ -13,13 +13,13 @@
 % global: Important Message on all Systems (Admin only)
 %%
 -module(resource_event).
--export([init/1, service_available/2, allowed_methods/2, content_types_provided/2, to_javascript/2]).
+-export([init/1, service_available/2, allowed_methods/2, resource_exists/2, content_types_provided/2, to_javascript/2]).
 
 -export([malformed_request/2, process_post/2]).
 
 -include_lib("webmachine/include/webmachine.hrl").
 
--record(state, {sessionkey}).
+-record(state, {sessionkey, session}).
 
 init([]) ->
     {ok,
@@ -29,7 +29,7 @@ init([]) ->
 %%    
 % Make sure that the session_master is available
 service_available(ReqData, State) ->
-    Status = case global:whereis_name(session_master) of
+    Status = case global:whereis_name(chat_master) of
         undefined -> false;
         _ -> true
     end,
@@ -49,6 +49,13 @@ malformed_request(ReqData, State) ->
         _ ->            {false, ReqData, State#state{sessionkey=SessionKey}}
     end.
        
+resource_exists(ReqData, State = #state{sessionkey=SK}) ->
+    case session_master:find(SK) of
+        {error, no_session} -> {false, ReqData, State};
+        {ok, Session} ->
+            {true, ReqData, State#state{session=Session}}
+    end.
+    
 content_types_provided(ReqData, State) ->
     {
         [
@@ -62,17 +69,13 @@ content_types_provided(ReqData, State) ->
 to_javascript(ReqData, State) ->
     {"true", ReqData, State}.
 
-process_post(ReqData, State = #state{sessionkey=SessionKey}) ->
-    case session_master:find(SessionKey) of
-        no_session -> {false, ReqData, State};
-        {ok, Session} ->
-                    
-            {ok, Events} = Session:get_messages_once(),
-            Content = transform_messages(Events),
-            NewReqData = wrq:set_resp_body(mochijson2:encode(Content), ReqData),
-            
-            {true, NewReqData, State}
-    end.
+process_post(ReqData, State = #state{session=Session}) ->
+    {ok, Events} = Session:get_messages_once(),
+    Content = transform_messages(Events),
+    NewReqData = wrq:set_resp_body(mochijson2:encode(Content), ReqData),
+    
+    {true, NewReqData, State}.
+
     
 %% Transforms all events to a mochijson compatible format
 transform_messages(Events) ->
