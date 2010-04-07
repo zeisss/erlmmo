@@ -3,7 +3,9 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/> 
     <title>My Chat</title>
     
-    <script src="js/jquery-1.3.2.js"></script>
+    <link type="text/css" href="css/ui-lightness/jquery-ui-1.8.custom.css" rel="stylesheet" />
+    <script src="js/jquery-1.4.2.js"></script>
+    <script src="js/jquery-ui-1.8.custom.min.js"></script>
     <script src="js/erlmmo-api.js"></script>
     
     <script>
@@ -51,6 +53,12 @@
 	    });
 	    MODEL.setSessionkey(false); // We kill ourself
 	  });
+	  
+	  $('#chat_window').dialog({
+	    'title': 'Chat',
+	    'minHeight': 300,
+	    'minWidth': 400
+	  });
 	},
 	
 	'logError': function(Error) {
@@ -93,50 +101,80 @@
       }
       
       $(document).ready(function() {
-	  $("#chatform").submit(sendChatMessage);
+	  $("#chat_window").submit(sendChatMessage);
 	  
 	  $("#window_pane .window .titlebar").bind('click', function(event) {
 	    
 	  });
 	  
-	  $("#login").click(function() {
-	    MODEL.login($("#username").val(), $("#password").val());
-	  });
-	  
 	  UI.init();
+	  
+	  $('#login_dialog').dialog({
+	    'modal':true,
+	    'closeOnEscape': false,
+	    'draggable': false,
+	    'title': 'Login',
+	    'buttons': {
+	      'Login': function() {
+		MODEL.login($("#username").val(), $("#password").val());
+		$("#login_dialog").dialog('destroy');
+	      }
+	    },
+	    
+	    'beforeclose':function(event, ui) {
+	      return MODEL.sessionkey != false;
+	      
+	    }
+	  });
       });
     </script>
     <style>
-    	#chat_form {
-    	  border:1px black solid;
-	  bottom:20px;
-	  left:25%;
-	  width:50%;
-	  height:50%;
+    	#chat_window {
+    	  position:relative;
+	  border:2px blue solid;
+	  margin:0px;
+	  padding:0px;
     	}
-	#chat_form .channels ul {
-	   display:inline;
-	}
-	#chat_form .channels ul li {
-	  border:1px black solid;
-	}
-	
-    	#chat_form #chat_messages {
-	  position:absolute;
-	  top:40px;
-	  bottom:30px;
-	  left:0px;
-	  right:0px;
-	  overflow:auto;
-    	}
-	#chat_form #chat_user {
-	  position:absolute;
-	  padding:2px;
-	  bottom:0px;
+	#chat_window .channels {
+	  position:relative;
+	  top:0px;
 	  left:0px;
 	  right:0px;
 	  height:30px;
+	  border:1px blue dashed;
 	}
+	#chat_window .channels ul {
+	  display:inline;
+	  margin: 0;
+	  padding: 0;
+	  cursor: default;
+	  list-style-type: none;
+	  float:left;
+	}
+	#chat_window .channels ul li {
+	  border:1px black solid;
+	}
+	
+    	#chat_window #chat_messages {
+	  background-color:yellow;
+	  color:black;
+	  overflow:auto;
+	  
+	  position:absolute;
+	  
+	  top:30px;
+	  right:0px;
+	  left:0px;
+	  bottom:35px;
+    	}
+	#chat_window #chat_user {
+	  padding:3px;
+	  position:absolute;
+	  bottom:0px;
+	  height:30px;
+	}
+	
+	/** ================================================================ */
 	
 	#navbar {
 	  top:0px;
@@ -154,6 +192,7 @@
 	  right:0px;
 	  position:absolute;
 	  background-color:gray;
+	  z-index:255;
 	}
 	
 	#window_pane .window {
@@ -171,32 +210,45 @@
     </style>	
   </head>
   <body>
-      <div id="navbar">
-	<a href="test.html">Tests</a>
-	<input id="username" />
-	<input type="password" id="password" />
-	<button id="login">Login</button>
+    <div id="navbar">
+      <a href="test.html">Tests</a>
+    </div>
+    
+    
+    <div id="window_pane">
+      
+      
+    </div>
+    
+    
+    <div id="chat_window">
+	  <div class="channels">
+	    <ul>
+	      <li>Global</li>
+	    </ul>
+	  </div>
+	  <div id="chat_messages">
+	    INITIAL CONTENT
+	  </div>
+	  <div id="chat_user">
+	      <form action="#" id="chatform">
+		  <input type="text" id="chat_input" size="20" />
+		  <input id="chat_submit" type="submit" value="Send" />
+	      </form>
+	  </div>
       </div>
-      <div id="window_pane">
-  	<div id="chat_form" class="window">
-	    <div class="titlebar">
-	      Chat 
-	    </div>
-	    <div class="channels">
-	      <ul>
-		<li>Global</li>
-	      </ul>
-	    </div>
-  		<div id="chat_messages">
-		  
-  		</div>
-		<div id="chat_user">
-		    <form action="#" id="chatform">
-			<input type="text" id="chat_input" size="20" />
-			<input id="chat_submit" type="submit" value="Send" />
-		    </form>
-  		</div>
-  	</div>
+      
+      <div id="login_dialog" style="display:hidden">
+	<table>
+	  <tr>
+	    <td>Login:</td>
+	    <td><input id="username" /></td>
+	  </tr>
+	  <tr>
+	    <td>Password:</td>
+	    <td><input id="password" type="password" /></td>
+	  </tr>
+	</table>
       </div>
   </body>
 </html>
