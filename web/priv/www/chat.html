@@ -7,39 +7,118 @@
     <script src="js/erlmmo-api.js"></script>
     
     <script>
-      var gSessionkey;
+      UI = {
+	'logError': function(Error) {
+	  alert(Error);
+	},
+	
+	'handle_events': function() {
+	  event_get(gSessionkey, function(events) {
+	    for(event in events) {
+	      
+	      UI.handle_event(events[event]);
+	    }
+	  });
+	},
+	
+	'handle_event': function(event) {
+	  
+	  if ( event.type == "chat_join_self") {
+	    $("#chat_messages").append("<div>You joined <span style='font-weight:bold'>" + event.name + "</span></div>" );
+	  } else if ( event.type == "chat_join") {
+	    $("#chat_messages").append("<div>" + event.player + " joined <span style='font-weight:bold'>" + event.name + "</span></div>" );
+	  } else if ( event.type == "chat_part") {
+	    $("#chat_messages").append("<div>" + event.player + " left <span style='font-weight:bold'>" + event.name + "</span></div>" );
+	  } else if ( event.type == "chat_send") {
+	    $("#chat_messages").append("<div>[" + event.name + "] <b>" + event.player + "</b>: " + event.message + "</div>" );
+	  } else {
+	    alert(event.type);  
+	  }
+	}
+	
+      };
+      
+      gSessionkey = "---";
       
       function sendMessage() {
-	chat_send(gSessionkey, $('#chat_input').get('value'));
+	try {
+	  Text = $('#chat_input').val();
+	  chat_send(gSessionkey, "Global", Text);
+	  $('#chat_input').val('');
+	} catch (E) {
+	  UI.logError(E);
+	}
+	
+	return false;
       }
+      
       $(document).ready(function() {
-	      $("#chat_form").submit(sendMessage);
-	      return false;
+	      $("#chatform").submit(sendMessage);
+	      
+	      auth_login("chat_test", "no_password", function(result) {
+		  gSessionkey = result;
+	      });
+	      
+	      $('body').ajaxError(function(event, xml, options, error) {
+		UI.logError({
+		  'event': event,
+		  'options': options,
+		  'error': error
+		});
+	      });
+	      
+	      
+	      setInterval(function() { UI.handle_events(); }, 1000);
       });
     </script>
     <style>
     	#chat_form {
-    		border:1px black solid;    	
+    	  border:1px black solid;
+	  left:20px;
+	  top:20px;
+	  width:400px;
+	  height:300px;
     	}
     	#chat_form #chat_messages {
-    		width:500px;
-    		height:200px;
+    	  width:500px;
+    	  height:200px;
+		
     	}
+	
+	
+	#window_pane {
+	  top:20px;
+	  left:0px;
+	  bottom:0px;
+	  right:0px;
+	  position:absolute;
+	  background-color:gray;
+	}
+	#window_pane .window {
+	  background-color:white;
+	  position:relative;
+	  overflow:auto;
+	}
+	#window_pane .window .titlebar {
+	  
+	}
     </style>	
   </head>
   <body>
       <div id="navbar">
 	<a href="test.html">Tests</a>
       </div>
-  	<div id="chat_form">
+      <div id="window_pane">
+  	<div id="chat_form" class="window">
   		<div id="chat_messages">
   		
   		</div>
   		<div id="chat_user">
   			<form action="#" id="chatform">
-	  			<input type="text" id="chat_input" size="20" /> <input id="chat_submit" type="submit" value="Say" />
+	  			<input type="text" id="chat_input" size="20" /> <input id="chat_submit" type="submit" value="Send" />
   			</form>
   		</div>
   	</div>
+      </div>
   </body>
 </html>
