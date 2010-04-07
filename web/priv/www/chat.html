@@ -195,18 +195,6 @@
 	  z-index:255;
 	}
 	
-	#window_pane .window {
-	  background-color:white;
-	  position:absolute;
-	  overflow:auto;
-	}
-	
-	#window_pane .window .titlebar {
-	  border:1px black solid;
-	  color:white;
-	  font-weight:bold;
-	  background-color: #3287A2;
-	}
     </style>	
   </head>
   <body>
@@ -217,38 +205,40 @@
     
     <div id="window_pane">
       
+	
       
-    </div>
+      <div id="chat_window">
+	    <div class="channels">
+	      <ul>
+		<li>Global</li>
+	      </ul>
+	    </div>
+	    <div id="chat_messages">
+	      INITIAL CONTENT
+	    </div>
+	    <div id="chat_user">
+		<form action="#" id="chatform">
+		    <input type="text" id="chat_input" size="20" />
+		    <input id="chat_submit" type="submit" value="Send" />
+		</form>
+	    </div>
+	</div>
+	
+	<div id="login_dialog" style="display:hidden">
+	  <table>
+	    <tr>
+	      <td>Login:</td>
+	      <td><input id="username" /></td>
+	    </tr>
+	    <tr>
+	      <td>Password:</td>
+	      <td><input id="password" type="password" /></td>
+	    </tr>
+	  </table>
+	</div>
+      
+      </div>
     
     
-    <div id="chat_window">
-	  <div class="channels">
-	    <ul>
-	      <li>Global</li>
-	    </ul>
-	  </div>
-	  <div id="chat_messages">
-	    INITIAL CONTENT
-	  </div>
-	  <div id="chat_user">
-	      <form action="#" id="chatform">
-		  <input type="text" id="chat_input" size="20" />
-		  <input id="chat_submit" type="submit" value="Send" />
-	      </form>
-	  </div>
-      </div>
-      
-      <div id="login_dialog" style="display:hidden">
-	<table>
-	  <tr>
-	    <td>Login:</td>
-	    <td><input id="username" /></td>
-	  </tr>
-	  <tr>
-	    <td>Password:</td>
-	    <td><input id="password" type="password" /></td>
-	  </tr>
-	</table>
-      </div>
   </body>
 </html>

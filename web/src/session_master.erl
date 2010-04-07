@@ -12,6 +12,7 @@
 -define(SERVER, {global, ?MODULE}).
 -define(TABLE, sessions).
 -define(TIMEOUT, 5 * 60 * 1000). % Timeout, before checking for timeouts
+-define(SESSION_TIMEOUT, 5 * 60 * 1000 * 1000). % Timeout, after which sessions gets dropped (MacroSeconds?)
 
 start_link() ->
     gen_server:start_link(?SERVER, ?MODULE, [], []).
@@ -119,6 +120,10 @@ handle_call({find, ApiKey}, _From, State = #state{table=Tid, timeout_table=Timeo
     
     
 handle_call({session_add_message, Session, Message}, _From, State = #state{session_table=Tid}) ->
+    % NOTE: Sometimes we receive messages for sessions, which are timedout (and deleted from the sesions table).
+    %       This can happen due to the timeout-cleanup run.
+    %       We may need to have a message cleanup-run, too.
+    %
     Messages = case ets:lookup(Tid, Session) of
         [] -> [];
         [{Session, Msgs}] -> Msgs;
@@ -172,7 +177,7 @@ internal_kill_timeouts(State = #state{timeout_table=Tid}, Now, Session) ->
     
     if
         % if session is older than 5 minutes, log it out
-        Diff > 1000 * 1000 * 60 * 5 ->
+        Diff > ?SESSION_TIMEOUT ->
             session_logout(Session, State);
         true -> ok
     end,
