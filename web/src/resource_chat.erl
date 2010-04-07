@@ -60,6 +60,8 @@ malformed_request(ReqData, State) ->
 process_post(ReqData, State = #state{apikey=ApiKey, message=Message, channel=Channel}) ->
     {ok, Session} = session_master:find(ApiKey),
     case Session:chat_send(Channel, Message) of
-        ok -> {true, ReqData, State};
+        ok ->
+            NewReqData = wrq:set_resp_body(mochijson2:encode(<<"OK">>), ReqData),
+            {true, NewReqData, State};
         _ -> {false, ReqData, State}
     end.

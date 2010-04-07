@@ -30,7 +30,9 @@ login(Name, Password) ->
 % Logs the given session out.
 %
 % logout(ApiKey) -> ok |Êno_session
-logout(ApiKey) ->
+logout(ApiKey) when is_list(ApiKey) ->
+    logout(list_to_binary(ApiKey));
+logout(ApiKey) when is_binary(ApiKey) ->
     gen_server:call(?SERVER, {logout, ApiKey}).
     
     

@@ -67,9 +67,10 @@ process_post(ReqData, State = #state{action=Action, parameters=Parameters}) ->
         "logout" ->
             ApiKey = wrq:get_qs_value("apikey", ReqData),
             
-            case session_manager:logout(ApiKey) of
-                ok -> {true, "OK"};
-                _ ->  {false, {struct, [{type, error},{message, "Logout failed"}]}}
+            case session_master:logout(ApiKey) of
+                ok -> {true, <<"OK">>};
+                no_session -> {true, {struct, [{code, 001}, {message, <<"Invalid sessionkey.">>}]}};
+                _ ->  {false, {struct, [{type, error},{message, <<"Logout failed">>}]}}
             end
     end,
     NewReqData = wrq:set_resp_body(mochijson2:encode(Content), ReqData),

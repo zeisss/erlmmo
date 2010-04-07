@@ -13,11 +13,13 @@
 % global: Important Message on all Systems (Admin only)
 %%
 -module(resource_event).
--export([init/1, service_available/2, allowed_methods/2, malformed_request/2, content_types_provided/2, to_javascript/2]).
+-export([init/1, service_available/2, allowed_methods/2, content_types_provided/2, to_javascript/2]).
+
+-export([malformed_request/2, process_post/2]).
 
 -include_lib("webmachine/include/webmachine.hrl").
 
--record(state, {apikey}).
+-record(state, {sessionkey}).
 
 init([]) ->
     {ok,
@@ -41,10 +43,10 @@ allowed_methods(ReqData, State) ->
 %%
 % Checks that all parameters are given for the POST request
 malformed_request(ReqData, State) ->
-    ApiKey =        wrq:get_qs_value("apikey", ReqData),
-    case ApiKey of
+    SessionKey =        wrq:get_qs_value("apikey", ReqData),
+    case SessionKey of
         undefined ->    {true,  ReqData, State};
-        _ ->            {false, ReqData, State#state{apikey=ApiKey}}
+        _ ->            {false, ReqData, State#state{sessionkey=SessionKey}}
     end.
        
 content_types_provided(ReqData, State) ->
@@ -57,11 +59,41 @@ content_types_provided(ReqData, State) ->
     
 %%
 % 
-to_javascript(ReqData, State = #state{apikey=ApiKey}) ->
-    {ok, Session} = session_master:find(ApiKey),
+to_javascript(ReqData, State) ->
+    {"true", ReqData, State}.
+
+process_post(ReqData, State = #state{sessionkey=SessionKey}) ->
+    case session_master:find(SessionKey) of
+        no_session -> {false, ReqData, State};
+        {ok, Session} ->
+                    
+            {ok, Events} = Session:get_messages_once(),
+            Content = transform_messages(Events),
+            NewReqData = wrq:set_resp_body(mochijson2:encode(Content), ReqData),
+            
+            {true, NewReqData, State}
+    end.
     
-    Events = Session:get_messages_once(),
+%% Transforms all events to a mochijson compatible format
+transform_messages(Events) ->
+    lists:map(fun(X) -> transform_message(X) end, Events).
     
-    Content = mochijson2:encode(Events),
-    
-    {Content, ReqData, State}.
+transform_message({chat_join_self, ChannelName, Players}) ->
+    {struct, [{type, chat_join_self},
+              {name, list_to_binary(ChannelName)},
+              {players, lists:map(fun(X) -> list_to_binary(X) end, Players)}]};
+transform_message({chat_join, ChannelName, PlayerName}) ->
+    {struct, [{type, chat_join},
+              {name, list_to_binary(ChannelName)},
+              {player, list_to_binary(PlayerName)}]};
+transform_message({chat_send, ChannelName, Player, Message}) ->
+    {struct, [{type, chat_send},
+              {name, list_to_binary(ChannelName)},
+              {player, list_to_binary(Player)},
+              {message, list_to_binary(Message)}]};
+transform_message({chat_part, ChannelName, Player}) ->
+    {struct,  [{type, chat_part},
+               {name, list_to_binary(ChannelName)},
+               {player, list_to_binary(Player)}]};
+transform_message(OtherEvent) ->
+    OtherEvent.
