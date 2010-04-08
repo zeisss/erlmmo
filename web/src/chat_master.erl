@@ -26,13 +26,13 @@ chat_list(Session) ->
 
 %%
 % This fails silently, if the user was already in the given session.
-chat_join(Session, Channel) ->
+chat_join(Session, Channel) when is_binary(Channel) ->
     gen_server:cast(?SERVER, {chat_join, Session, Channel}).
     
-chat_send(Session, Channel, Message) ->
+chat_send(Session, Channel, Message) when is_binary(Channel) andalso is_binary(Message)->
     gen_server:cast(?SERVER, {chat_send, Session, Channel, Message}).
 
-chat_part(Session, Channel) ->
+chat_part(Session, Channel) when is_binary(Channel) ->
     gen_server:cast(?SERVER, {chat_part, Session, Channel}).
     
     
@@ -106,6 +106,8 @@ handle_cast({chat_part, Session, ChannelName}, State = #state{table=Tid}) ->
     
     ets:insert(Tid, Channel#channel{sessions=NewSessions}),
     lists:foreach(fun(S) -> S:add_message({chat_part, ChannelName, Session:get_name()}) end, NewSessions),
+    
+    Session:add_message({chat_part_self, ChannelName}),
     
     {noreply, State}.
     

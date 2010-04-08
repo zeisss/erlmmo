@@ -9,6 +9,97 @@
     <script src="js/erlmmo-api.js"></script>
     
     <script>
+      function chat_model() {
+	return {
+	  'listeners': [],
+	  
+	  'channels': [],
+	  /*
+	  channel: {
+	    'name': 'NAME',
+	    'sessions': [
+	      {'name':'NAME', 'gravatar_id':'GRAVATAR'}
+	      
+	    ],
+	    'messages': [
+	      ?MESSAGE_EVENT
+	    ]
+	  }
+	  */
+	  
+	  
+	  'handleChatEvent': function(event) {
+	      if ( event.type == "chat_join_self") {
+		this.newChannel(event);
+	      } else if ( event.type == "chat_join") {
+		this.addChannelPlayer(
+		  event.name,
+		  event.player
+		);
+	      } else if ( event.type == "chat_part_self") {
+		this.deleteChannel(event.name);
+	      } else if ( event.type == "chat_part") {
+		this.removeChannelPlayer(event.name, event.player);
+	      } else if ( event.type == "chat_send") {
+		this.addChannelMessage(event.name, event.player, event.message);
+	      }
+	    },
+	    
+	    'fireEvent': function(event_object) {
+	      for ( x in this.listeners ) {
+		lst = this.listeners[x];
+		lst(event_object);
+	      }
+	    },
+	    
+	    'newChannel': function(Channel) {
+	      this.channels[Channel.name] = {
+		'name': Channel.name,
+		'messages': [],
+		'players': Channel.players
+	      };
+	      this.fireEvent(['chat_join', Channel.name]);
+	    },
+	    
+	    'deleteChannel': function(ChannelName) {
+	      this.channels[ChannelName] = false;
+	      this.fireEvent(['chat_part', ChannelName]);
+	    },
+	    
+	    'addChannelPlayer': function(ChannelName, Player) {
+	      this.channels[ChannelName].players.add(Player);
+	      this.fireEvent(['players_changed', ChannelName]);
+	    },
+	    
+	    'removeChannelPlayer': function(ChannelName, Player) {
+	      this.channels[ChannelName].player.remove(Player);
+	      this.fireEvent(['players_changed', ChannelName]);
+	    },
+	    
+	    'addChannelMessage': function(ChannelName, Player, Message) {
+	      if ( this.channels[ChannelName] ) {
+		this.channels[ChannelName].messages.push({
+		  'player': Player,
+		  'message': Message
+		});
+		this.fireEvent(['chat_send', ChannelName]);
+	      }
+	    }
+	    
+	};
+      }
+      
+      /*
+       $("#chat_messages").append("<div>You joined <span style='font-weight:bold'>" + event.name + "</span></div>" );
+       
+       $("#chat_messages").append("<div>" + event.player + " joined <span style='font-weight:bold'>" + event.name + "</span></div>" );
+       
+       $("#chat_messages").append("<div>" + event.player + " left <span style='font-weight:bold'>" + event.name + "</span></div>" );
+       
+       
+      */
+      
+    
       MODEL = {
 	'sessionkey': false,
 	
@@ -54,11 +145,7 @@
 	    MODEL.setSessionkey(false); // We kill ourself
 	  });
 	  
-	  $('#chat_window').dialog({
-	    'title': 'Chat',
-	    'minHeight': 300,
-	    'minWidth': 400
-	  });
+	  UI.CHAT.init();
 	},
 	
 	'logError': function(Error) {
@@ -66,47 +153,150 @@
 	},
 	
 	'handle_event': function(event) {
-	  
-	  if ( event.type == "chat_join_self") {
-	    $("#chat_messages").append("<div>You joined <span style='font-weight:bold'>" + event.name + "</span></div>" );
-	  } else if ( event.type == "chat_join") {
-	    $("#chat_messages").append("<div>" + event.player + " joined <span style='font-weight:bold'>" + event.name + "</span></div>" );
-	  } else if ( event.type == "chat_part") {
-	    $("#chat_messages").append("<div>" + event.player + " left <span style='font-weight:bold'>" + event.name + "</span></div>" );
-	  } else if ( event.type == "chat_send") {
-	    $("#chat_messages").append("<div>[" + event.name + "] <b>" + event.player + "</b>: " + event.message + "</div>" );
+	  if ( event.type.substring(0,4) == "chat") {
+	    UI.CHAT.model.handleChatEvent(event);
 	  } else {
 	    alert("Unknown Eventtype: " + event.type);  
 	  }
+	},
+	
+	
+	'CHAT': {
+	  'model': chat_model(),
+	  'currentChannel': false,
+	  
+	  'init': function() {
+	    this.model.listeners.push(function(event) {
+	      UI.CHAT.handleChatModelEvent(event);
+	    });
+	    
+	    
+	    $('#chat_window').dialog({
+	      'title': 'Chat',
+	      'minHeight': 300,
+	      'minWidth': 400
+	    });
+	    
+	    // The "Say" button
+	    $("#chat_window").submit(this.eventSendMessage);
+	    
+	    // $('#chat_window .channels ul li').bind('click', this.eventTabClickHandler);
+	  },
+	  
+	  'selectChannel': function(ChannelName) {
+	    // Channel exists
+	    if ( this.model.channels[ChannelName])
+	    {
+	      this.currentChannel = ChannelName;
+	      this.renderPlayerList(ChannelName);
+	      this.renderChatMessages(ChannelName);
+	      this.renderSelectedChannelTab();
+	    }
+	  }, // selectChannel
+	  
+	  'eventSendMessage': function() {
+	    if ( !MODEL.sessionkey || !UI.CHAT.currentChannel)
+	    {
+	      alert("Not logged in yet!");
+	      return false;
+	    }
+	    try {
+	      Text = $('#chat_input').val();
+	      chat_send(MODEL.sessionkey, UI.CHAT.currentChannel, Text);
+	      $('#chat_input').val('');
+	    } catch (E) {
+	      UI.logError(E);
+	    }
+	    return false;
+	  },
+	  
+	  'handleChatModelEvent': function(event) {
+	    if ( event[0] == "chat_join") {
+	      this.renderChannelTabs();
+	      if ( this.currentChannel == false) {
+		this.selectChannel(event[1]);
+	      }
+	    }
+	    else if ( event[0] == "chat_part") {
+	      this.renderChannelTabs();
+	      
+	      if ( event[1] == this.currentChannel) {
+		for ( x in this.model.channels ) {
+		  this.selectChannel(x);
+		  return; // simply the select the first channel
+		}
+		
+	      }
+	    }
+	    else if ( event[0] == 'players_changed')
+	    {
+	      if ( event[1] == this.currentChannel ) {
+		// The players list has been updated
+		this.renderPlayerList(event[1]);
+	      } else {
+		// we do not look at this channel currently, so we don't care
+	      }
+	    } else if ( event[0] == "chat_send") {
+	      if ( this.currentChannel == event[1]) {
+		this.renderChatMessages(event[1]);
+	      }
+	    } else {
+	      $("#chat_messages").append("<div>Unknown chat model event: " + event[0] + "</div>");  
+	    }
+	  },
+	  
+	  'renderChatMessages': function(ChannelName) {
+	    div = $("#chat_messages");
+	    div.html('');
+	    for ( x in this.model.channels[ChannelName].messages) {
+	      msg = this.model.channels[ChannelName].messages[x];
+	      div.append("<div><b>" + msg.player + "</b>: " + msg.message + "</div>" );
+	    }
+	    
+	  },
+	  
+	  'renderSelectedChannelTab': function() {
+	    ChannelName = this.currentChannel;
+	    ul = $("#chat_window .channels ul li");
+	    ul.each(function() {
+	      if ( $(this).text() == ChannelName) {
+		$(this).addClass("selected");
+	      } else {
+		$(this).removeClass("selected");
+	      }
+	    });
+	  },
+	  
+	  'renderChannelTabs': function() {
+	    ul = $("#chat_window .channels ul");
+	    ul.html('');
+	    for ( name in this.model.channels) {
+	      li = ul.append("<li>" + name + "</li>");
+	    }
+	    this.renderSelectedChannelTab();
+	    
+	    $("#chat_window .channels ul li").click(function() {
+	      UI.CHAT.selectChannel($(this).text());
+	    });
+	  },
+	  
+	  'renderPlayerList': function(ChannelName) {
+	    Channel = this.model.channels[ChannelName];
+	    
+	    ul = $("#chat_window .channel_sessions ul");
+	    ul.html(''); // Clear
+	    for( x in Channel.players)
+	    {
+	      ul.append('<li>' + Channel.players[x] + '</li>');
+	    }
+	  }
+	  
+	  
+	  
 	}
-	
-	
       };
       
-      function sendChatMessage() {
-	if ( !MODEL.sessionkey)
-	{
-	  alert("Not logged in yet!");
-	  return false;
-	}
-	try {
-	  Text = $('#chat_input').val();
-	  chat_send(MODEL.sessionkey, "Global", Text);
-	  $('#chat_input').val('');
-	} catch (E) {
-	  UI.logError(E);
-	}
-	
-	return false;
-      }
-      
       $(document).ready(function() {
-	  $("#chat_window").submit(sendChatMessage);
-	  
-	  $("#window_pane .window .titlebar").bind('click', function(event) {
-	    
-	  });
-	  
 	  UI.init();
 	  
 	  $('#login_dialog').dialog({
@@ -144,7 +334,6 @@
 	  border:1px blue dashed;
 	}
 	#chat_window .channels ul {
-	  display:inline;
 	  margin: 0;
 	  padding: 0;
 	  cursor: default;
@@ -153,17 +342,33 @@
 	}
 	#chat_window .channels ul li {
 	  border:1px black solid;
+	  display:inline; 
+	}
+	#chat_window .channels ul li.selected {
+	  background-color:green;
 	}
 	
+	#chat_window .channel_sessions {
+	  background-color:blue;
+	  color:white;
+	  
+	  position:absolute;
+	  top:30px;
+	  right:0px;
+	  width:150px;
+	  bottom:35px;
+	  
+	}
     	#chat_window #chat_messages {
 	  background-color:yellow;
 	  color:black;
 	  overflow:auto;
+	  padding:3px;
 	  
 	  position:absolute;
 	  
 	  top:30px;
-	  right:0px;
+	  right:150px;
 	  left:0px;
 	  bottom:35px;
     	}
@@ -204,9 +409,6 @@
     
     
     <div id="window_pane">
-      
-	
-      
       <div id="chat_window">
 	    <div class="channels">
 	      <ul>
@@ -215,6 +417,11 @@
 	    </div>
 	    <div id="chat_messages">
 	      INITIAL CONTENT
+	    </div>
+	    <div class="channel_sessions">
+	      <ul>
+		
+	      </ul>
 	    </div>
 	    <div id="chat_user">
 		<form action="#" id="chatform">

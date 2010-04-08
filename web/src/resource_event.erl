@@ -83,20 +83,23 @@ transform_messages(Events) ->
     
 transform_message({chat_join_self, ChannelName, Players}) ->
     {struct, [{type, chat_join_self},
-              {name, list_to_binary(ChannelName)},
+              {name, ChannelName},
               {players, lists:map(fun(X) -> list_to_binary(X) end, Players)}]};
 transform_message({chat_join, ChannelName, PlayerName}) ->
     {struct, [{type, chat_join},
-              {name, list_to_binary(ChannelName)},
+              {name, ChannelName},
               {player, list_to_binary(PlayerName)}]};
+transform_message({chat_part_self, ChannelName}) ->
+    {struct, [{type, chat_part_self},
+              {name, ChannelName}]};
 transform_message({chat_send, ChannelName, Player, Message}) ->
     {struct, [{type, chat_send},
-              {name, list_to_binary(ChannelName)},
+              {name, ChannelName},
               {player, list_to_binary(Player)},
-              {message, list_to_binary(Message)}]};
+              {message, Message}]};
 transform_message({chat_part, ChannelName, Player}) ->
     {struct,  [{type, chat_part},
-               {name, list_to_binary(ChannelName)},
+               {name, ChannelName},
                {player, list_to_binary(Player)}]};
 transform_message(OtherEvent) ->
     OtherEvent.

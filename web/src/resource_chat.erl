@@ -50,7 +50,7 @@ malformed_request(ReqData, State) ->
             case [Message, Channel] of
                 [undefined,_] -> {true, ReqData, State};
                 [_,undefined] -> {true, ReqData, State};
-                _ ->             {false, ReqData, State#state{sessionkey=SessionKey,message=Message,channel=Channel}}
+                _ ->             {false, ReqData, State#state{sessionkey=SessionKey,message=list_to_binary(Message),channel=list_to_binary(Channel)}}
             end
     end.
        
