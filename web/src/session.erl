@@ -9,7 +9,7 @@
 init() ->
     % Shall we spawn a session process here?
     THIS:chat_join(<<"Global">>),
-    THIS:chat_join(<<"Trade">>),
+    % THIS:chat_join(<<"Trade">>),
     ok.
 
 %% -----------------------------------------------------------------------------
