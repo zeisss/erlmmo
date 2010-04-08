@@ -89,79 +89,9 @@
 	};
       }
       
-      /*
-       $("#chat_messages").append("<div>You joined <span style='font-weight:bold'>" + event.name + "</span></div>" );
-       
-       $("#chat_messages").append("<div>" + event.player + " joined <span style='font-weight:bold'>" + event.name + "</span></div>" );
-       
-       $("#chat_messages").append("<div>" + event.player + " left <span style='font-weight:bold'>" + event.name + "</span></div>" );
-       
-       
-      */
       
-    
-      MODEL = {
-	'sessionkey': false,
-	
-	'init': function() {
-	  setInterval(function() { MODEL.handle_events(); }, 1000);
-	},
-	
-	'login': function(username, password) {
-	  auth_login(username, password, function(sessionkey) {
-	    MODEL.setSessionkey(sessionkey);
-	  });
-	},
-	
-	'setSessionkey': function(sessionkey) {
-	  MODEL.sessionkey = sessionkey;	  
-	},
-	
-	
-	'handle_events': function() {
-	  
-	  if ( MODEL.sessionkey == false)
-	    return;
-	  
-	  event_get(MODEL.sessionkey, function(events) {
-	    for(event in events) {
-	      UI.handle_event(events[event]);
-	    }
-	  });
-	}
-      };
-      
-      UI = {
-	'init': function() {
-	  MODEL.init();  
-	  
-	  // Register AJAX Error Handler
-	  $('body').ajaxError(function(event, xml, options, error) {
-	    UI.logError({
-	      'event': event,
-	      'options': options,
-	      'error': error
-	    });
-	    MODEL.setSessionkey(false); // We kill ourself
-	  });
-	  
-	  UI.CHAT.init();
-	},
-	
-	'logError': function(Error) {
-	  alert("Error: " + Error.error);
-	},
-	
-	'handle_event': function(event) {
-	  if ( event.type.substring(0,4) == "chat") {
-	    UI.CHAT.model.handleChatEvent(event);
-	  } else {
-	    alert("Unknown Eventtype: " + event.type);  
-	  }
-	},
-	
-	
-	'CHAT': {
+      function chat_ui() {
+	return {
 	  'model': chat_model(),
 	  'currentChannel': false,
 	  
@@ -290,10 +220,82 @@
 	      ul.append('<li>' + Channel.players[x] + '</li>');
 	    }
 	  }
+	};
+      }
+      
+      /*
+       $("#chat_messages").append("<div>You joined <span style='font-weight:bold'>" + event.name + "</span></div>" );
+       
+       $("#chat_messages").append("<div>" + event.player + " joined <span style='font-weight:bold'>" + event.name + "</span></div>" );
+       
+       $("#chat_messages").append("<div>" + event.player + " left <span style='font-weight:bold'>" + event.name + "</span></div>" );
+       
+       
+      */
+      
+    
+      MODEL = {
+	'sessionkey': false,
+	
+	'init': function() {
+	  setInterval(function() { MODEL.handle_events(); }, 1000);
+	},
+	
+	'login': function(username, password) {
+	  auth_login(username, password, function(sessionkey) {
+	    MODEL.setSessionkey(sessionkey);
+	  });
+	},
+	
+	'setSessionkey': function(sessionkey) {
+	  MODEL.sessionkey = sessionkey;	  
+	},
+	
+	
+	'handle_events': function() {
 	  
+	  if ( MODEL.sessionkey == false)
+	    return;
 	  
-	  
+	  event_get(MODEL.sessionkey, function(events) {
+	    for(event in events) {
+	      UI.handle_event(events[event]);
+	    }
+	  });
 	}
+      };
+      
+      UI = {
+	'init': function() {
+	  MODEL.init();  
+	  
+	  // Register AJAX Error Handler
+	  $('body').ajaxError(function(event, xml, options, error) {
+	    UI.logError({
+	      'event': event,
+	      'options': options,
+	      'error': error
+	    });
+	    MODEL.setSessionkey(false); // We kill ourself
+	  });
+	  
+	  UI.CHAT.init();
+	},
+	
+	'logError': function(Error) {
+	  alert("Error: " + Error.error);
+	},
+	
+	'handle_event': function(event) {
+	  if ( event.type.substring(0,4) == "chat") {
+	    UI.CHAT.model.handleChatEvent(event);
+	  } else {
+	    alert("Unknown Eventtype: " + event.type);  
+	  }
+	},
+	
+	
+	'CHAT': chat_ui()
       };
       
       $(document).ready(function() {
@@ -321,7 +323,6 @@
     <style>
     	#chat_window {
     	  position:relative;
-	  border:2px blue solid;
 	  margin:0px;
 	  padding:0px;
     	}
@@ -331,7 +332,9 @@
 	  left:0px;
 	  right:0px;
 	  height:30px;
-	  border:1px blue dashed;
+	  
+	  padding-left:5px;
+	  padding-top:3px;
 	}
 	#chat_window .channels ul {
 	  margin: 0;
@@ -341,16 +344,17 @@
 	  float:left;
 	}
 	#chat_window .channels ul li {
-	  border:1px black solid;
+	  margin-left:3px;
+	  margin-right:3px;
 	  display:inline; 
 	}
 	#chat_window .channels ul li.selected {
-	  background-color:green;
+	  text-decoration:underline;
+	  text-weight:bold;
 	}
 	
 	#chat_window .channel_sessions {
-	  background-color:blue;
-	  color:white;
+	  overflow: scroll;
 	  
 	  position:absolute;
 	  top:30px;
@@ -360,9 +364,7 @@
 	  
 	}
     	#chat_window #chat_messages {
-	  background-color:yellow;
-	  color:black;
-	  overflow:auto;
+	  overflow:scroll;
 	  padding:3px;
 	  
 	  position:absolute;
@@ -372,6 +374,7 @@
 	  left:0px;
 	  bottom:35px;
     	}
+	
 	#chat_window #chat_user {
 	  padding:3px;
 	  position:absolute;
@@ -425,7 +428,7 @@
 	    </div>
 	    <div id="chat_user">
 		<form action="#" id="chatform">
-		    <input type="text" id="chat_input" size="20" />
+		    <input type="text" id="chat_input" size="40" />
 		    <input id="chat_submit" type="submit" value="Send" />
 		</form>
 	    </div>
