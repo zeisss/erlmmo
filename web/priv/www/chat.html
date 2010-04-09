@@ -223,15 +223,7 @@
 	};
       }
       
-      /*
-       $("#chat_messages").append("<div>You joined <span style='font-weight:bold'>" + event.name + "</span></div>" );
-       
-       $("#chat_messages").append("<div>" + event.player + " joined <span style='font-weight:bold'>" + event.name + "</span></div>" );
-       
-       $("#chat_messages").append("<div>" + event.player + " left <span style='font-weight:bold'>" + event.name + "</span></div>" );
-       
-       
-      */
+      
       
     
       MODEL = {
@@ -245,6 +237,11 @@
 	  auth_login(username, password, function(sessionkey) {
 	    MODEL.setSessionkey(sessionkey);
 	  });
+	},
+	
+	'logout': function() {
+	  auth_logout(this.sessionkey);
+	  this.sessionkey = false; // we kill the sessionkey directly, so no one can accicidently contiue to use it.
 	},
 	
 	'setSessionkey': function(sessionkey) {
@@ -266,6 +263,8 @@
       };
       
       UI = {
+	'CHAT': chat_ui(),
+	
 	'init': function() {
 	  MODEL.init();  
 	  
@@ -279,7 +278,16 @@
 	    MODEL.setSessionkey(false); // We kill ourself
 	  });
 	  
+	  
+	  
 	  UI.CHAT.init();
+	},
+	
+	'logout': function() {
+	  if ( MODEL.sessionkey ) {
+	    MODEL.logout();  
+	  }
+	  UI.showLoginDialog();
 	},
 	
 	'logError': function(Error) {
@@ -293,13 +301,9 @@
 	    alert("Unknown Eventtype: " + event.type);  
 	  }
 	},
-	
-	
-	'CHAT': chat_ui()
-      };
-      
-      $(document).ready(function() {
-	  UI.init();
+	'showLoginDialog': function() {
+	  // Reset the password field
+	  $("#password").val('');
 	  
 	  $('#login_dialog').dialog({
 	    'modal':true,
@@ -318,6 +322,16 @@
 	      
 	    }
 	  });
+	  
+	}
+	
+	
+      };
+      
+      $(document).ready(function() {
+	  UI.init();
+	  
+	  UI.showLoginDialog();
       });
     </script>
     <style>
@@ -346,7 +360,12 @@
 	#chat_window .channels ul li {
 	  margin-left:3px;
 	  margin-right:3px;
-	  display:inline; 
+	  margin-top:2px;
+	  padding:3px;
+	  display:inline;
+	  border-top:1px black solid;
+	  border-right:1px black solid;
+	  border-left:1px black solid;
 	}
 	#chat_window .channels ul li.selected {
 	  text-decoration:underline;
@@ -408,28 +427,26 @@
   <body>
     <div id="navbar">
       <a href="test.html">Tests</a>
+      <span style="float:right">
+	<a href="javascript:UI.logout()">Logout</a>
+      </span>
     </div>
     
     
     <div id="window_pane">
       <div id="chat_window">
 	    <div class="channels">
-	      <ul>
-		<li>Global</li>
-	      </ul>
+	      <ul></ul>
 	    </div>
 	    <div id="chat_messages">
-	      INITIAL CONTENT
 	    </div>
 	    <div class="channel_sessions">
-	      <ul>
-		
-	      </ul>
+	      <ul></ul>
 	    </div>
 	    <div id="chat_user">
 		<form action="#" id="chatform">
-		    <input type="text" id="chat_input" size="40" />
-		    <input id="chat_submit" type="submit" value="Send" />
+		  <input type="text" id="chat_input" size="40" />
+		  <input id="chat_submit" type="submit" value="Send" />
 		</form>
 	    </div>
 	</div>

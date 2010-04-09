@@ -12,6 +12,9 @@ function auth_login(username, password, callback) {
     );
 }
 
+/**
+ * Deauthenticates the user and kills the sessionkey. If a callback is provided, it is called on successfull logout.
+ */
 function auth_logout (sessionkey, callback) {
     jQuery.post("/v1/auth/logout?apikey=" + encodeURIComponent(sessionkey), "", function(result) {
         if (callback != null) {
