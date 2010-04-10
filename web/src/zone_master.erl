@@ -90,7 +90,13 @@ handle_call({new_zone, ZoneId, Pid}, _From, State = #state{zone_pids=ZonePids, z
     {reply, ok, State}.
     
 handle_cast({kill_session, Session}, State = #state{zone_sessions=ZoneSessions}) ->
-    ets:delete(ZoneSessions, Session),
+    case ets:lookup(ZoneSessions, Session) of
+        [{Session, ZonePid}] ->
+            zone:session_kill(ZonePid, Session),
+            ets:delete(ZoneSessions, Session);
+        [] ->
+            ok
+    end,
     {noreply, State};
     
 handle_cast({zone_join, Session, ZoneId, Coords}, State = #state{zone_pids=ZonePids, zone_sessions=ZoneSessions}) ->

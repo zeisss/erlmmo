@@ -194,12 +194,14 @@ internal_kill_timeouts(State = #state{timeout_table=Tid}, Now, Session) ->
     % continue with the next session in the list
     internal_kill_timeouts(State, Now, ets:next(Tid, Session)).
     
-    
 session_logout(Session, _State = #state{table=Tid, timeout_table=TimeoutTable, session_table=SessionTid}) ->
     error_logger:info_msg("[SESSION] Logout ~p~n", [Session:get_name()]),
     
     % Remove the session from all channels
     chat_master:chat_kill(Session),
+    
+    % Bye bye zone
+    zone_master:kill_session(Session),
     
     % Clear the messages from the messages table
     ets:delete(SessionTid, Session),

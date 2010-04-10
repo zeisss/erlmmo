@@ -9,7 +9,7 @@
 -export([perform_tick/1, test/0]).
 
 % Session API
--export([session_join/3, session_set_course/3]).
+-export([session_join/3, session_set_course/3, session_kill/2]).
 
 % Gen_Server API
 -export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -19,6 +19,9 @@ session_join(ZonePid, Session, Coords) ->
     
 session_set_course(ZonePid, Session, Path) ->
     gen_server:cast(ZonePid, {session_set_course, Session, Path}).
+    
+session_kill(ZonePid, Session) ->
+    gen_server:cast(ZonePid, {session_kill, Session}).
     
 perform_tick(ZonePid) ->
     ZonePid ! perform_tick,
@@ -48,6 +51,25 @@ init(PropList) ->
     
 handle_call(_Message, _From, State) ->
     {noreply, State}.
+    
+handle_cast({session_kill, Session}, State = #state{coords=CTid, paths=PTid}) ->
+    ets:delete(PTid, Session),
+    
+    List = ets:tab2list(CTid),
+    
+    lists:foreach(
+        fun({Coords, Sessions}) ->
+            case lists:member(Session, Sessions) of
+                true ->
+                    NewList = lists:delete(Session, Sessions),
+                    ets:insert(CTid, {Coords, NewList});
+                false ->
+                    ok
+            end
+        end, List
+    ),
+    
+    {noreply, State};
     
 handle_cast({session_join, Session, Coords}, State = #state{coords=CTid}) ->
     % TODO: We could redesign the coords table to be a bag or so.
