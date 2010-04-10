@@ -260,10 +260,12 @@
 	  },
 	  
 	  'handleEvent': function(event) {
-	    if ( event.type == "error") {
+	    knownEventTypes = ['zone_status', 'chat_join', 'chat_join_self', 'chat_part', 'chat_part_self', 'chat_send'];
+	    if ( knownEventTypes.indexOf(event.type) == -1 ) {
 	      this.messages.push(event);
 	      this.fireEvent(['new_event']);
 	    }
+	    
 	  }
 	};
 	MODEL.listeners.push(model);
@@ -292,12 +294,69 @@
 	      
 	      if ( msg.type == "error") {
 		div.append('<div>ERROR: ' + msg.message + '(' + msg.code + ')</div>');
+	      } else {
+		div.append('<div>Unknown event: ' + msg.type + '</div>');
 	      }
 	    }
 	  },
 	  
 	  'handleEvent': function(event) {
 	    this.renderMessages();
+	  }
+	};
+      }
+      
+      
+      function zone_model() {
+	model = {
+	  'listeners': [],
+	  'objects': [],
+	  
+	  'handleEvent': function(event) {
+	    if ( event.type == "zone_status" ) {
+	      this.updateObjects(event.players);    
+	    }
+	  },
+	  
+	  'updateObjects': function(objects) {
+	    this.objects = [];
+	    
+	    for ( x in objects ) {
+	      obj = objects[x];
+	      // each obj: {coord: {x:0, y:1}, player:'Miro'}
+	      this.objects.push(obj);  
+	    }
+	    this.fireEvent(['objects_updated']);
+	  },
+	  
+	  'fireEvent': function(event) {
+	    for ( x in this.listeners) {
+	      this.listeners[x].handleEvent(event);
+	    }
+	  }
+	  
+	};
+	MODEL.listeners.push(model);
+	return model;
+      };
+      
+      function zone_ui () {
+	return {
+	  'model': zone_model(),
+	  'context': false,
+	  
+	  'init': function() {
+	    this.model.listeners.push(this);
+	    this.context = document.getElementById("zone_ui_canvas").getContext("2d");
+	  },
+	  'handleEvent': function(event) {
+	    if ( event[0] == "objects_updated") {
+	      this.renderObjects();
+	    }
+	  },
+	  
+	  'renderObjects': function() {
+	    
 	  }
 	};
       }
@@ -346,12 +405,14 @@
 	  for ( x in this.listeners ) {
 	    this.listeners[x].handleEvent(event);
 	  }
+	  
 	}
       };
       
       UI = {
 	'CHAT': chat_ui(),
 	'SYSTEM_LOG': system_log_ui(),
+	'ZONE': zone_ui(),
 	
 	'init': function() {
 	  MODEL.init();  
@@ -368,6 +429,7 @@
 	  
 	  this.CHAT.init();
 	  this.SYSTEM_LOG.init();
+	  this.ZONE.init();
 	},
 	
 	'logout': function() {
@@ -566,6 +628,7 @@
     
     
     <div id="window_pane">
+      <canvas id="zone_ui_canvas" style="width:100%; height:100%"></canvas>
     </div>
   
     <div id="chat_window">

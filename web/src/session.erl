@@ -10,6 +10,8 @@ init() ->
     % Shall we spawn a session process here?
     THIS:chat_join(<<"Global">>),
     % THIS:chat_join(<<"Trade">>),
+    
+    zone_master:zone_join(THIS, zone_1, {0,0}),
     ok.
 
 %% -----------------------------------------------------------------------------

@@ -5,7 +5,10 @@
 -export([
     validate_player_name/1,
     validate_chat_message/1,
-    validate_chat_channel/1
+    validate_chat_channel/1,
+    validate_next_coords/2,
+    
+    test/0
 ]).
 
 validate_player_name("") -> false;
@@ -23,4 +26,29 @@ validate_chat_channel(Name) when length(Name) >= 15->
     false;
 validate_chat_channel(_) ->
     true.
+    
+    
+% if the coords are no real move
+validate_next_coords({X,Y}, {X,Y}) -> true;
+validate_next_coords({NextX, NextY}, {CurrentX, CurrentY}) ->
+    abs(CurrentX - NextX) < 2 andalso abs(CurrentY - NextY) < 2.
+    
+    
+test() ->
+    true = validate_next_coords({0,0}, {0,0}),
+    true = validate_next_coords({0,0}, {1,0}),
+    true = validate_next_coords({0,0}, {0,1}),
+    true = validate_next_coords({0,0}, {1,1}),
+    true = validate_next_coords({0,0}, {-1,0}),
+    true = validate_next_coords({0,0}, {0,-1}),
+    true = validate_next_coords({0,0}, {-1,-1}),
+    true = validate_next_coords({0,0}, {-1,1}),
+    true = validate_next_coords({0,0}, {1,-1}),
+    false = validate_next_coords({-2,0}, {2,0}),
+    false = validate_next_coords({0,-3}, {0,0}),
+    
+    
+    
+    
+    ok.
     

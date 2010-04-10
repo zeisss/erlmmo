@@ -85,14 +85,29 @@ process_post(ReqData, State = #state{session=Session}) ->
 transform_messages(Events) ->
     lists:map(fun(X) -> transform_message(X) end, Events).
     
+% GENERAL
 transform_message({error, Code, Message}) ->
     {struct, [{type, error},
               {code, Code},
               {message, Message}]};
-transform_message({chat_join_self, ChannelName, Players}) ->
+% ZONE
+transform_message({zone_status, SessionCoords}) ->
+    {struct,  [{type, zone_status},
+               {players, lists:map(
+                    fun({{X,Y}, Session}) ->
+                        {struct, [
+                            {coord, {struct, [{x,X}, {y,Y}]}},
+                            {player, transform_session(Session)}
+                        ]}
+                    end,
+                    SessionCoords
+                )}
+            ]};
+% CHAT
+transform_message({chat_join_self, ChannelName, PlayerNames}) ->
     {struct, [{type, chat_join_self},
               {name, ChannelName},
-              {players, lists:map(fun(X) -> transform_player(X) end, Players)}]};
+              {players, lists:map(fun(X) -> transform_player(X) end, PlayerNames)}]};
 transform_message({chat_join, ChannelName, PlayerName}) ->
     {struct, [{type, chat_join},
               {name, ChannelName},
@@ -113,6 +128,9 @@ transform_message(OtherEvent) ->
     OtherEvent.
     
 
+transform_session(Session) ->
+    Session:get_name().
+    
 transform_player(Player) when is_list(Player) ->
     list_to_binary(Player);
 transform_player(Player) when is_binary(Player)->

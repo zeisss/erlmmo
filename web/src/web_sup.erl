@@ -56,7 +56,9 @@ init([]) ->
            
     ChatMaster = {chat_master, {chat_master, start_link, []}, permanent, 5000, worker, dynamic},
            
-    SessionMaster = {session_master, {session_master, start_link, []}, permanent, 5000, worker, dynamic},       
+    SessionMaster = {session_master, {session_master, start_link, []}, permanent, 5000, worker, dynamic},
+    
+    ZoneSup = {zone_sup, {zone_sup, start_link, []}, permanent, 5000, supervisor, dynamic},
            
-    Processes = [Web, SessionMaster, ChatMaster],
+    Processes = [Web, SessionMaster, ChatMaster, ZoneSup],
     {ok, {{one_for_one, 10, 10}, Processes}}.
