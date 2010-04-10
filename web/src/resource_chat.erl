@@ -34,7 +34,11 @@ allowed_methods(ReqData, State) ->
 %%
 % Checks that all parameters are given for the POST request
 malformed_request(ReqData, State) ->
-    SessionKey =        wrq:get_qs_value("apikey", ReqData),
+    SessionKey = case wrq:path_info(sessionkey, ReqData) of
+        undefined -> wrq:get_qs_value("apikey", ReqData);
+        A -> mochiweb_util:unquote(A)
+    end,
+    
     case SessionKey of
         undefined -> {true, ReqData, State};
         _ -> 

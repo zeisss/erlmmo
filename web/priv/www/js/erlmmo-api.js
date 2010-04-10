@@ -28,7 +28,7 @@ function auth_logout (sessionkey, callback) {
  * Fetches all pending events from the server and pass them to the callback.
  */
 function event_get(sessionkey, callback) {
-    jQuery.post("/v1/event?apikey=" + encodeURIComponent(sessionkey), "", callback, "json");
+    jQuery.post("/v1/" + encodeURIComponent(sessionkey) + "/event", "", callback, "json");
 }
 
 /**
@@ -36,7 +36,7 @@ function event_get(sessionkey, callback) {
  */
 function chat_send(sessionkey, channel, message, callback) {
     jQuery.post(
-        "/v1/chat?message=" + encodeURIComponent(message) + "&apikey=" + encodeURIComponent(sessionkey) + "&channel=" + encodeURIComponent(channel),
+        "/v1/" + encodeURIComponent(sessionkey) + "/chat?message=" + encodeURIComponent(message) + "&channel=" + encodeURIComponent(channel),
         "",
         function (result) {
             if (callback != null) {
