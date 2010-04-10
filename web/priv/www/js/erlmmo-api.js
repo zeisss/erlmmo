@@ -24,12 +24,16 @@ function auth_logout (sessionkey, callback) {
 }
 
 
-
+/**
+ * Fetches all pending events from the server and pass them to the callback.
+ */
 function event_get(sessionkey, callback) {
     jQuery.post("/v1/event?apikey=" + encodeURIComponent(sessionkey), "", callback, "json");
 }
 
-
+/**
+ *
+ */
 function chat_send(sessionkey, channel, message, callback) {
     jQuery.post(
         "/v1/chat?message=" + encodeURIComponent(message) + "&apikey=" + encodeURIComponent(sessionkey) + "&channel=" + encodeURIComponent(channel),
@@ -41,4 +45,38 @@ function chat_send(sessionkey, channel, message, callback) {
         },
         "json"
     );
+}
+
+function chat_join(sessionkey, channel, callback) {
+    jQuery.post(
+        "/v1/" + encodeURIComponent(sessionkey) + "/chat/" + encodeURIComponent(channel),
+        "",
+        function(result) {
+            if ( callback != null ) {
+                callback(result);
+            }
+        },
+        "json"
+    );
+}
+
+
+function chat_part(sessionkey, channel, callback) {
+    jQuery.post(
+        "/v1/" + encodeURIComponent(sessionkey) + "/chat/" + encodeURIComponent(channel) + "?action=delete",
+        "",
+        function(result) {
+            if ( callback != null ) {
+                callback(result);
+            }
+        },
+        "json"
+    );
+}
+
+/**
+ *
+ */
+function chat_get_all_channels(callback) {
+    jQuery.get('/v1/channels','', callback, 'json');
 }

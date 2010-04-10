@@ -33,7 +33,7 @@ malformed_request(ReqData, State) ->
         [Action] ->
             LoginName =     wrq:get_qs_value("login_name", ReqData),
             LoginPassword = wrq:get_qs_value("login_password", ReqData),
-            ApiKey =        wrq:get_qs_value("apikey", ReqData),
+            SessionKey =    wrq:get_qs_value("apikey", ReqData),
             NewState =      State#state{action=Action},
             
             case Action of
@@ -41,12 +41,14 @@ malformed_request(ReqData, State) ->
                     case [LoginName, LoginPassword] of
                         [undefined, _] -> {true, ReqData, NewState};
                         [_, undefined] -> {true, ReqData, NewState};
-                        [_,_] -> {false, ReqData, NewState#state{parameters={LoginName, LoginPassword}}}
+                        [_,_] -> {false, ReqData, NewState#state{parameters={list_to_binary(LoginName), list_to_binary(LoginPassword)}}}
                     end;
                 "logout" ->
-                    case ApiKey of
-                        undefined -> {true, ReqData, NewState};
-                        _ -> {false, ReqData, NewState#state{parameters={ApiKey}}}
+                    case SessionKey of
+                        undefined ->
+                            {true, ReqData, NewState};
+                        _ ->
+                            {false, ReqData, NewState#state{parameters={list_to_binary(SessionKey)}}}
                     end
             end;
         _ -> {true, ReqData, State}
@@ -60,17 +62,28 @@ process_post(ReqData, State = #state{action=Action, parameters=Parameters}) ->
         "login" ->
             {LoginName, LoginPassword} = Parameters,
     
-            {ok, ApiKey} = session_master:login(LoginName, LoginPassword),
-            
-            {true, {struct, [{type, ok}, {apikey, ApiKey}]}};
+            case session_master:login(LoginName, LoginPassword) of
+                {ok, ApiKey} ->
+                    {true, {struct, [{type, ok}, {apikey, ApiKey}]}};
+                    
+                {error, invalid_credentials} ->
+                    {false, {struct, [{type, error}, {code, 005}, {message, <<"Invalid username/password.">>}]}};
+                
+                % Log any other error
+                {error, Reason} ->
+                    error_logger:error_msg("Error while authenticating user '~s': ~p", [LoginName, Reason]),
+                    {false, {struct, [{type, error}, {code, 004}, {message, <<"Unknown error during login">>}]}}
+            end;
     
         "logout" ->
-            ApiKey = wrq:get_qs_value("apikey", ReqData),
+            {SessionKey} = Parameters,
             
-            case session_master:logout(ApiKey) of
-                ok -> {true, <<"OK">>};
-                no_session -> {true, {struct, [{code, 001}, {message, <<"Invalid sessionkey.">>}]}};
-                _ ->  {false, {struct, [{type, error},{message, <<"Logout failed">>}]}}
+            case session_master:logout(SessionKey) of
+                ok ->         {true, <<"OK">>};
+                no_session -> {true, {struct, [{type, error}, {code, 001}, {message, <<"Invalid sessionkey.">>}]}};
+                UnknownError ->
+                    error_logger:error_msg("Error while logging out user '~s': ~p", [SessionKey:get_name(), UnknownError]),
+                    {false, {struct, [{type, error},{code, 003}, {message, <<"Logout failed">>}]}}
             end
     end,
     NewReqData = wrq:set_resp_body(mochijson2:encode(Content), ReqData),

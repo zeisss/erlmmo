@@ -4,13 +4,7 @@
 
 %%
 % This resource provides the following urls:
-% GET /v1/chat      Returns all pending chat messages for the session  
-% POST /v1/chat     message=MyTextBlaBlub&range=local      Post a message to the other sessions
-%
-% local: Just the current fields
-% system: The whole system
-% sub: Subrange (All systems)
-% global: Important Message on all Systems (Admin only)
+% POST /v1/chat     message=MyTextBlaBlub&channel=Global    Post a message to the other sessions
 %%
 -module(resource_chat).
 -export([init/1, malformed_request/2, resource_exists/2, service_available/2, allowed_methods/2, process_post/2]).
@@ -67,9 +61,6 @@ resource_exists(ReqData, State = #state{sessionkey=Sessionkey}) ->
 % get the parameters
 % and process them through the session_master
 process_post(ReqData, State = #state{session=Session, message=Message, channel=Channel}) ->
-    case Session:chat_send(Channel, Message) of
-        ok ->
-            NewReqData = wrq:set_resp_body(mochijson2:encode(<<"OK">>), ReqData),
-            {true, NewReqData, State};
-        _ -> {false, ReqData, State}
-    end.
+    ok = Session:chat_send(Channel, Message),
+    NewReqData = wrq:set_resp_body(mochijson2:encode(<<"OK">>), ReqData),
+    {true, NewReqData, State}.

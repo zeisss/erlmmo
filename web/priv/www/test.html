@@ -25,7 +25,7 @@
                 
                 auth_logout(sessionkey, function(result) {
                     
-                    same(result, {"code": 001, "message":"Invalid sessionkey."}, "Invalid session error");
+                    same(result, {'type':'error', 'code': 001, "message":"Invalid sessionkey."}, "Invalid session error");
                     
                     start();    
                 });
@@ -71,12 +71,12 @@
                     
                     same(events[0], {'type':"chat_join_self", 'name':"Global", 'players': ['Chat-Test']}, "Receive self-join message");
                     
-                    chat_send(sessionkey, "Global", "Hi!", function(result) {
+                    chat_send(sessionkey, "Global", "QUnit Test-Message", function(result) {
                         equals(result, "OK");
                        
                         event_get(sessionkey, function(events) {
                            
-                           same(events, [{'type':"chat_send", 'name':'Global', 'player':"Chat-Test", 'message':"Hi!"}], "Receive our own chat message");
+                           same(events, [{'type':"chat_send", 'name':'Global', 'player':"Chat-Test", 'message':"QUnit Test-Message"}], "Receive our own chat message");
                            
                            auth_logout(sessionkey);
                            
@@ -90,7 +90,7 @@
         
         
         test("Muti session chat test", function() {
-            expect(4);
+            expect(5);
             stop(1000); 
             
             auth_login("Multi-Chat1", "mypassword1", function(sessionkey1, timeout1){
@@ -99,7 +99,7 @@
                 auth_login("Multi-Chat2", "mypassword2", function(sessionkey2, timeout2) {
                     ok(sessionkey2 != null, "Successfull login with session 2");
                     
-                    chat_send(sessionkey1, "Global", "Hello World!", function(result) {
+                    chat_send(sessionkey1, "Global", "QUnit Test-Message #1", function(result) {
                         equals(result, "OK");
                         
                         event_get(sessionkey2, function(result) {
@@ -113,7 +113,7 @@
                                     { 'type': 'chat_send',
                                       'name':"Global",
                                       'player': 'Multi-Chat1',
-                                      'message': "Hello World!"
+                                      'message': "QUnit Test-Message #1"
                                     }
                                 ],
                                 "Receiving initial events"                                  
@@ -121,7 +121,12 @@
                             
                             auth_logout(sessionkey1, function() {
                                 auth_logout(sessionkey2, function() {
-                                    start();        
+                                    
+                                    
+                                    chat_get_all_channels(function(channels) {
+                                      same(channels, ["Global"], "Checking get channels");
+                                      start();
+                                    });
                                 });
                             });
                             
@@ -130,7 +135,8 @@
                     });
                 });
                 
-            })
+            });
+            
         });
   });
   </script>

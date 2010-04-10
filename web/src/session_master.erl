@@ -31,8 +31,6 @@ login(Name, Password) ->
 % Logs the given session out.
 %
 % logout(ApiKey) -> ok |Êno_session
-logout(ApiKey) when is_list(ApiKey) ->
-    logout(list_to_binary(ApiKey));
 logout(ApiKey) when is_binary(ApiKey) ->
     gen_server:call(?SERVER, {logout, ApiKey}).
     
@@ -40,10 +38,11 @@ logout(ApiKey) when is_binary(ApiKey) ->
 logout_all() ->
     gen_server:call(?SERVER, logout_all).
     
+    
+%%
+% find(apikey()) -> {ok, Session}
+% Session: session:new(...)
 %
-% get(apikey()) -> {ok, Session}
-% Session:
-
 find(ApiKey) when is_list(ApiKey) ->
     find(list_to_binary(ApiKey));
 find(ApiKey) when is_binary(ApiKey) ->
@@ -71,26 +70,33 @@ init([]) ->
     
     {ok, #state{table=Tid, timeout_table=TimeoutTid, session_table=SessionTid}}.
     
-handle_call({login, Name, Password}, From, State = #state{table=Tid, timeout_table=TimeoutTid}) ->
-    case ets:match_object(Tid, {session, '_', Name}) of
-        [Session] -> session_logout(Session, State);
-        [] -> ok
-    end, 
-    
-    Counter = State#state.session_counter,
-    
-    % TODO: Create a real random apikey here
-    ApiKey = erlang:list_to_binary([<<"TODO:APIKEY">>, erlang:list_to_binary(erlang:integer_to_list(Counter))]),
-    
-    NewSession = session:new(ApiKey, Name),
-    case NewSession:init() of
-        ok ->
-            ets:insert(Tid, NewSession),
-            ets:insert(TimeoutTid, {NewSession, erlang:now()}),
+handle_call({login, Name, Password}, _From, State = #state{table=Tid, timeout_table=TimeoutTid}) ->
+    CredentialsCheck = true, % TODO: Implement a credentials check here
+    case CredentialsCheck of
+        false ->
+            {reply, {error, invalid_credentials}, State, ?TIMEOUT};
+        true ->
+            case ets:match_object(Tid, {session, '_', Name}) of
+                [Session] -> session_logout(Session, State);
+                [] -> ok
+            end, 
             
-            {reply, {ok, ApiKey}, State#state{session_counter=Counter+1}, ?TIMEOUT};
-        _Error ->
-            {reply, {error, failed_while_init_session}, State, ?TIMEOUT}
+            Counter = State#state.session_counter,
+            
+            % TODO: Create a real random apikey here
+            ApiKey = erlang:list_to_binary([<<"TODO:APIKEY">>, erlang:list_to_binary(erlang:integer_to_list(Counter))]),
+            
+            NewSession = session:new(ApiKey, Name),
+            case NewSession:init() of
+                ok ->
+                    ets:insert(Tid, NewSession),
+                    ets:insert(TimeoutTid, {NewSession, erlang:now()}),
+                    
+                    {reply, {ok, ApiKey}, State#state{session_counter=Counter+1}, ?TIMEOUT};
+                UnknownError ->
+                    error_logger:error_msg("New session for ~s raised error during init: ~p~n", [Name, UnknownError]),
+                    {reply, {error, failed_while_init_session}, State, ?TIMEOUT}
+            end
     end;
 
 handle_call(logout_all, _From, State = #state{table=Tid}) ->
@@ -114,8 +120,11 @@ handle_call({find, ApiKey}, _From, State = #state{table=Tid, timeout_table=Timeo
         [Session] ->
             ets:insert(TimeoutTid, {Session, erlang:now()}),
             {reply, Session, State, ?TIMEOUT};
-        [] -> {reply, no_session, State, ?TIMEOUT};
-        Result -> {stop, {multiple_sessions_for_apikey, ApiKey, Result}, no_session, State}
+        [] ->
+            {reply, no_session, State, ?TIMEOUT};
+        Result ->
+            error_logger:error_msg("Invalid internal state with multiple sessions for the same apikey: ~s~n", [ApiKey]),
+            {stop, {multiple_sessions_for_apikey, ApiKey, Result}, no_session, State}
     end;
     
     
@@ -146,12 +155,12 @@ handle_cast(_Message, State) ->
     {noreply, State, ?TIMEOUT}.
     
 handle_info(timeout, State) ->
-    io:format("Performing session timeout cleanup~n"),
+    error_logger:info_msg("Performing session timeout cleanup~n"),
     case internal_kill_timeouts(State) of
         ok ->
-            io:format(" done (timeout)~n"),
             {noreply, State, ?TIMEOUT};
         Error ->
+            error_logger:error_msg("Error while performing timeout cleanup: ~P~n", [Error]),
             {stop, {error, while_performing_cleanup, Error}, State}
     end.
     
@@ -171,7 +180,6 @@ internal_kill_timeouts(State = #state{timeout_table=Tid}) ->
 internal_kill_timeouts(_, _, '$end_of_table') -> ok;
 internal_kill_timeouts(State = #state{timeout_table=Tid}, Now, Session) ->
     [{Session, Timestamp}] = ets:lookup(Tid, Session),
-    io:format("Checking ~p~n", [Session]),
     
     Diff = timer:now_diff(Now, Timestamp),
     
@@ -187,7 +195,7 @@ internal_kill_timeouts(State = #state{timeout_table=Tid}, Now, Session) ->
     
     
 session_logout(Session, _State = #state{table=Tid, timeout_table=TimeoutTable, session_table=SessionTid}) ->
-    io:format("[SESSION] Logout ~s~n", [Session:get_name()]),
+    error_logger:info_msg("[SESSION] Logout ~p~n", [Session:get_name()]),
     
     % Remove the session from all channels
     chat_master:chat_kill(Session),
