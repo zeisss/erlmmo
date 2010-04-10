@@ -291,7 +291,7 @@
 	      msg = this.model.messages[x];
 	      
 	      if ( msg.type == "error") {
-		div.append('<div>ERROR (' + msg.code + "): " + msg.message + '</div>');
+		div.append('<div>ERROR: ' + msg.message + '(' + msg.code + ')</div>');
 	      }
 	    }
 	  },

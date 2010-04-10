@@ -54,7 +54,7 @@ channel_list() ->
 chat_join(Session, Channel) when is_binary(Channel) ->
     gen_server:cast(?SERVER, {chat_join, Session, Channel}).
     
-chat_send(Session, Channel, Message) when is_binary(Channel) andalso is_binary(Message)->
+chat_send(Session, Channel, Message) when is_binary(Channel), is_binary(Message)->
     gen_server:cast(?SERVER, {chat_send, Session, Channel, Message}).
 
 chat_part(Session, Channel) when is_binary(Channel) ->

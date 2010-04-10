@@ -1,6 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Komodo Project File - DO NOT EDIT -->
 <project id="a1192bb2-64e1-f344-a9b1-7b6e3673e080" kpf_version="4" name="Erlmmo.kpf">
+<file id="25250f32-a84b-d642-82ce-99e697ee0dd7" idref="20049894-7923-1945-9361-df33e69e3357" name="test.erl" url="web/src/test.erl">
+</file>
+<file id="7471940f-6bcc-3e4f-a8ec-61da4a6b2bc0" idref="20049894-7923-1945-9361-df33e69e3357" name="validation.erl" url="web/src/validation.erl">
+</file>
+<file id="d9244981-6456-e347-8c6c-b88a46f8bdd5" idref="20049894-7923-1945-9361-df33e69e3357" name="session.erl" url="web/src/session.erl">
+</file>
+<file id="dd7f5e96-84fa-4e4e-b8e7-42f4e0d58c86" idref="20049894-7923-1945-9361-df33e69e3357" name="chat_master.erl" url="web/src/chat_master.erl">
+</file>
+<file id="fc0c58c0-8e0c-8446-a02c-17f7c7d4978d" idref="20049894-7923-1945-9361-df33e69e3357" name="session_master.erl" url="web/src/session_master.erl">
+</file>
+<file id="1338b1cd-3a45-e64c-b7ad-b16f7a522c98" idref="6c623e6b-46ac-3743-9218-746f8c28b282" name="resource_auth.erl" url="web/src/resource_auth.erl">
+</file>
+<file id="2330f930-87aa-0d4c-9d44-6d033859bc5b" idref="6c623e6b-46ac-3743-9218-746f8c28b282" name="resource_index.erl" url="web/src/resource_index.erl">
+</file>
+<file id="242fdaed-d0e2-fd45-89dc-e672e3460520" idref="6c623e6b-46ac-3743-9218-746f8c28b282" name="resource_event.erl" url="web/src/resource_event.erl">
+</file>
+<file id="3ab46ec0-47ac-0646-bd8d-8ab6ebedb67c" idref="6c623e6b-46ac-3743-9218-746f8c28b282" name="resource_chat_channels.erl" url="web/src/resource_chat_channels.erl">
+</file>
+<file id="6109bcb5-85c0-3a40-ba9e-e3cd95c5e77f" idref="6c623e6b-46ac-3743-9218-746f8c28b282" name="resource_chat.erl" url="web/src/resource_chat.erl">
+</file>
+<file id="74807c95-c94d-7d46-8292-ef8bd9e211e4" idref="6c623e6b-46ac-3743-9218-746f8c28b282" name="resource_channels.erl" url="web/src/resource_channels.erl">
+</file>
+<file id="bb1cce7e-d654-9341-a0f5-8f8c7d8e00be" idref="6c623e6b-46ac-3743-9218-746f8c28b282" name="resource_status.erl" url="web/src/resource_status.erl">
+</file>
+<file id="cc89b09f-5110-3342-9795-b1bb04655215" idref="6c623e6b-46ac-3743-9218-746f8c28b282" name="resource_static.erl" url="web/src/resource_static.erl">
+</file>
+<folder id="20049894-7923-1945-9361-df33e69e3357" idref="a1192bb2-64e1-f344-a9b1-7b6e3673e080/web/src" name="core">
+</folder>
+<folder id="6c623e6b-46ac-3743-9218-746f8c28b282" idref="a1192bb2-64e1-f344-a9b1-7b6e3673e080/web/src" name="resources">
+</folder>
+<folder id="fe29ea0c-737d-c94d-8736-d90d9c6dabfa" idref="a1192bb2-64e1-f344-a9b1-7b6e3673e080/web/src" name="web">
+</folder>
+<file id="43e7d39e-c94d-b647-92d8-70f602ab201a" idref="fe29ea0c-737d-c94d-8736-d90d9c6dabfa" name="web.hrl" url="web/src/web.hrl">
+</file>
+<file id="6d310888-53ab-6f4c-83e0-d44eb43146a2" idref="fe29ea0c-737d-c94d-8736-d90d9c6dabfa" name="web_deps.erl" url="web/src/web_deps.erl">
+</file>
+<file id="979ee03c-ca75-c24b-b895-e4cb984bee96" idref="fe29ea0c-737d-c94d-8736-d90d9c6dabfa" name="web.erl" url="web/src/web.erl">
+</file>
+<file id="cd05d6eb-a103-8f45-aba2-5424c707723b" idref="fe29ea0c-737d-c94d-8736-d90d9c6dabfa" name="web.app" url="web/src/web.app">
+</file>
+<file id="e9a11b7c-166d-6247-b316-84766ac7b429" idref="fe29ea0c-737d-c94d-8736-d90d9c6dabfa" name="web_app.erl" url="web/src/web_app.erl">
+</file>
+<file id="fcefe935-2a46-2842-8fa3-00937d3c9282" idref="fe29ea0c-737d-c94d-8736-d90d9c6dabfa" name="web_sup.erl" url="web/src/web_sup.erl">
+</file>
 <preference-set idref="a1192bb2-64e1-f344-a9b1-7b6e3673e080">
   <boolean id="import_live">1</boolean>
 </preference-set>
