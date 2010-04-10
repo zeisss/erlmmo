@@ -63,7 +63,7 @@ function chat_join(sessionkey, channel, callback) {
 
 function chat_part(sessionkey, channel, callback) {
     jQuery.post(
-        "/v1/" + encodeURIComponent(sessionkey) + "/chat/" + encodeURIComponent(channel) + "?action=delete",
+        "/v1/" + encodeURIComponent(sessionkey) + "/chat/" + encodeURIComponent(channel) + "?action=part",
         "",
         function(result) {
             if ( callback != null ) {

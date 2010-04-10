@@ -4,8 +4,11 @@
 -export([start_link/0, chat_join/2, chat_send/3, chat_part/2, chat_kill/1]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
-
-
+%%%
+% Chat_master:
+% The chat_master is central router for chat messages. Through the public api sessions can join/part channels
+% and direct messages to it, which are then rerouted to all joined sessions.
+% 
 %%%
 % Error Handling:
 % There are two types or errors that can occur, that we handle:
@@ -144,7 +147,12 @@ handle_cast({chat_part, Session, ChannelName}, State = #state{table=Tid}) ->
                 end,
                 Channel#channel.sessions
             ),
-            ets:insert(Tid, Channel#channel{sessions=NewSessions}),
+            case NewSessions of
+                [] ->
+                    ets:delete(Tid, ChannelName);
+                NewSessions ->
+                    ets:insert(Tid, Channel#channel{sessions=NewSessions})
+            end,
             
             lists:foreach(fun(S) ->
                 S:add_message({chat_part, ChannelName, Session:get_name()}) end,
@@ -200,7 +208,12 @@ internal_kill(Session, Tid, Element) ->
     lists:foreach(fun(S) -> S:add_message({chat_part, Channel#channel.name, Session:get_name()}) end, NewSessions),
     
     % overwrite the existing channel with the new one.
-    ets:insert(Tid, Channel#channel{sessions=NewSessions}),
+    case NewSessions of
+        [] ->
+            ets:delete(Tid, Element);
+        NewSessions ->
+            ets:insert(Tid, Channel#channel{sessions=NewSessions})
+    end,
     
     Next = ets:next(Tid, Element),
     internal_kill(Session, Tid, Next).

@@ -57,7 +57,7 @@
         
         module("Chat");
         test("sending and receiving messages", function() {
-            expect(8);
+            expect(12);
             stop(6000);
             
             auth_login("Chat-Test", "mypassword$", function(sessionkey) {
@@ -84,9 +84,36 @@
                                 same(events, [
                                   {'type':'error', 'code':20001, 'message': 'Invalid channelname. Unable to join.'}
                                 ]);
-                                auth_logout(sessionkey);
-                              
-                                start(); 
+                                
+                                chat_join(sessionkey, "Trade", function(ok) {
+                                  same(ok, "OK");
+                                  
+                                  event_get(sessionkey, function(events) {
+                                    same(events, [
+                                      {'type':'chat_join_self', 'name':'Trade', 'players':['Chat-Test']}
+                                    ], "Receive self-join for channel Trade");
+                                    
+                                    chat_part(sessionkey, "Trade", function(ok) {
+                                        same(ok, "OK");
+                                        
+                                        event_get(sessionkey, function(events) {
+                                          same(events, [
+                                            {type:'chat_part_self', 'name':'Trade'}  
+                                            
+                                          ], "Receive self-part");
+                                          
+                                          auth_logout(sessionkey);
+                                    
+                                          start();     
+                                        });
+                                        
+                                    });      
+                                    
+                                  });
+                                  
+                                });
+                                
+                                
                               });
                           });
                           
