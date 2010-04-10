@@ -77,7 +77,7 @@ handle_cast(status, State = #state{table=Tid}) ->
     {noreply, State};
     
 handle_cast({chat_kill, Session}, State = #state{table=Tid}) ->
-    internal_kill(Session, Tid),
+    ok = internal_kill(Session, Tid),
     {noreply, State};
     
 handle_cast({chat_join, Session, ChannelName}, State = #state{table=Tid}) ->
@@ -191,7 +191,10 @@ code_change(_OldVsn, State, _Extra) ->
 % Deletes the given session from all channels.
 % The appropriate chat_part message gets send, too.
 internal_kill(Session, Tid) ->
-    internal_kill(Session, Tid, ets:first(Tid)).
+    ets:safe_fixtable(Tid, true),
+    Result = (catch internal_kill(Session, Tid, ets:first(Tid))),
+    ets:safe_fixtable(Tid, false),
+    Result.
     
 internal_kill(_, _, '$end_of_table') -> ok;
 internal_kill(Session, Tid, Element) ->

@@ -65,7 +65,7 @@
 	    },
 	    
 	    'deleteChannel': function(ChannelName) {
-	      this.channels[ChannelName] = false;
+	      delete(this.channels[ChannelName]);
 	      this.fireEvent(['chat_part', ChannelName]);
 	    },
 	    
@@ -87,6 +87,11 @@
 		});
 		this.fireEvent(['chat_send', ChannelName]);
 	      }
+	    },
+	    
+	    
+	    'partChannel': function(Channel) {
+	      chat_part(MODEL.sessionkey, Channel);
 	    }
 	    
 	};
@@ -117,6 +122,10 @@
 	    
 	    // The "Say" button
 	    $("#chat_window").submit(this.eventSendMessage);
+	    
+	    $("#chat_part").click(function() {
+	      UI.CHAT.model.partChannel(UI.CHAT.currentChannel);
+	    });
 	    
 	    // $('#chat_window .channels ul li').bind('click', this.eventTabClickHandler);
 	  },
@@ -235,6 +244,64 @@
 	};
       }
       
+      function system_log_model() {
+	model = {
+	  'messages': [],
+	  'listeners': [],
+	  
+	  'addListener': function(listener) {
+	    this.listeners.push(listener);
+	  },
+	  
+	  'fireEvent': function(event) {
+	    for ( x in this.listeners) {
+	      this.listeners[x].handleEvent(event);
+	    }
+	  },
+	  
+	  'handleEvent': function(event) {
+	    if ( event.type == "error") {
+	      this.messages.push(event);
+	      this.fireEvent(['new_event']);
+	    }
+	  }
+	};
+	MODEL.listeners.push(model);
+	return model;
+      }
+      
+      function system_log_ui() {
+	return {
+	  'model': system_log_model(),
+	  
+	  'init': function() {
+	    this.model.addListener(this);
+	    
+	    $("#system_log_ui").dialog({
+	      'minWidth': 400,
+	      'minHeight': 300,
+	      'height': 300,
+	      'width': 400
+	    });
+	  },
+	  
+	  'renderMessages': function() {
+	    div = $("#system_log_ui").html('');
+	    for ( x in this.model.messages) {
+	      msg = this.model.messages[x];
+	      
+	      if ( msg.type == "error") {
+		div.append('<div>ERROR (' + msg.code + "): " + msg.message + '</div>');
+	      }
+	    }
+	  },
+	  
+	  'handleEvent': function(event) {
+	    this.renderMessages();
+	  }
+	};
+      }
+      
       
       
     
@@ -284,6 +351,7 @@
       
       UI = {
 	'CHAT': chat_ui(),
+	'SYSTEM_LOG': system_log_ui(),
 	
 	'init': function() {
 	  MODEL.init();  
@@ -298,7 +366,8 @@
 	    MODEL.setSessionkey(false); // We kill ourself
 	  });
 	  
-	  UI.CHAT.init();
+	  this.CHAT.init();
+	  this.SYSTEM_LOG.init();
 	},
 	
 	'logout': function() {
@@ -510,8 +579,9 @@
 	  </div>
 	  <div id="chat_user">
 	      <form action="#" id="chatform">
-		<input type="text" id="chat_input" size=35 />
+		<input type="text" id="chat_input" size="32" />
 		<input id="chat_submit" type="submit" value="Send" />
+		<input id="chat_part" type="button" value="Part" />
 	      </form>
 	  </div>
       </div>
@@ -527,6 +597,10 @@
 	    <td><input id="password" type="password" /></td>
 	  </tr>
 	</table>
+      </div>
+      
+      <div id="system_log_ui" style="display:hidden; overflow:auto">
+	
       </div>
       
       <div id="chat_channels_dialog" style="display:hidden">

@@ -157,12 +157,11 @@
                                 "Receiving initial events"                                  
                             );
                             
-                            auth_logout(sessionkey1, function() {
+                            chat_get_all_channels(function(channels) {
+                              same(channels, ["Global"], "Checking get channels");
+                            
+                              auth_logout(sessionkey1, function() {
                                 auth_logout(sessionkey2, function() {
-                                    
-                                    
-                                    chat_get_all_channels(function(channels) {
-                                      same(channels, ["Global"], "Checking get channels");
                                       start();
                                     });
                                 });
