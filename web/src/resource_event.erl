@@ -81,6 +81,10 @@ process_post(ReqData, State = #state{session=Session}) ->
 transform_messages(Events) ->
     lists:map(fun(X) -> transform_message(X) end, Events).
     
+transform_message({error, Code, Message}) ->
+    {struct, [{type, error},
+              {code, Code},
+              {message, Message}]};
 transform_message({chat_join_self, ChannelName, Players}) ->
     {struct, [{type, chat_join_self},
               {name, ChannelName},

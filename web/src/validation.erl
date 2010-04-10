@@ -19,6 +19,8 @@ validate_chat_message(_) -> true.
 validate_chat_channel(Name) when is_binary(Name) ->
     validate_chat_channel(binary_to_list(Name));
 validate_chat_channel("") -> false;
-validate_chat_channel(Name) when length(Name) < 15->
+validate_chat_channel(Name) when length(Name) >= 15->
+    false;
+validate_chat_channel(_) ->
     true.
     

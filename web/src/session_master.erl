@@ -124,7 +124,8 @@ handle_call({find, ApiKey}, _From, State = #state{table=Tid, timeout_table=Timeo
             {reply, no_session, State, ?TIMEOUT};
         Result ->
             error_logger:error_msg("Invalid internal state with multiple sessions for the same apikey: ~s~n", [ApiKey]),
-            {stop, {multiple_sessions_for_apikey, ApiKey, Result}, no_session, State}
+            Result = no_session,
+            {stop, {multiple_sessions_for_apikey, ApiKey, Result}, Result, State}
     end;
     
     

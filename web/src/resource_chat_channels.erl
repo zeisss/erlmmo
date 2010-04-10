@@ -60,8 +60,6 @@ malformed_request(ReqData, State) ->
     end.
        
 resource_exists(ReqData, State = #state{sessionkey=Sessionkey}) ->
-    io:format("~p~n", [State]),
-    
     case session_master:find(Sessionkey) of
         {error, no_session} ->
             {false, ReqData, State};

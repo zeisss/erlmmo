@@ -5,6 +5,23 @@
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
+
+%%%
+% Error Handling:
+% There are two types or errors that can occur, that we handle:
+%  illegal error: This error occures, when the user plays around with the api, which he is not
+%                 supposed to do.
+%                 These errors are logger to the 'error_logger' module. The user action is
+%                 silently (for the user) ignored.
+%  user error: When a user error occures, the user did something wrong / what we don't allow.
+%              e.g. sending an empty chat message or joining a channel with illegal characters
+%              When this happens, we send the user an error message from the list below.
+%              The error codes shall be unique. The range for the chat_master is 20.000 - 29.999
+%%
+-define(ERROR_20001, {error, 20001, <<"Invalid channelname. Unable to join.">>}).
+-define(ERROR_20002, {error, 20002, <<"You are already in this channel.">>}).
+-define(ERROR_20003, {error, 20003, <<"Invalid chat message.">>}).
+
 -define(SERVER, {global, ?MODULE}).
 -define(TABLE, chat_channels).
 
@@ -63,7 +80,7 @@ handle_cast({chat_kill, Session}, State = #state{table=Tid}) ->
 handle_cast({chat_join, Session, ChannelName}, State = #state{table=Tid}) ->
     case validation:validate_chat_channel(ChannelName) of
         false ->
-            % TODO: Notify the user, that he cannot join that channel
+            Session:add_message(?ERROR_20001),
             {noreply, State};
         true -> 
             Channel = case ets:lookup(Tid, ChannelName) of
@@ -75,6 +92,7 @@ handle_cast({chat_join, Session, ChannelName}, State = #state{table=Tid}) ->
             case lists:member(Session, OldSessions) of
                 true ->
                     % Session is already in that channel
+                    Session:add_message(?ERROR_20002),
                     ok;
                 false ->
                     NewSessions = OldSessions ++ [Session],
@@ -106,12 +124,13 @@ handle_cast({chat_send, Session, ChannelName, Message}, State = #state{table=Tid
                                 Channel#channel.sessions
                             );
                         false ->
-                            error_logger:error_msg("SessionÊ~p sending message to channel '~s' in which he is no member: ~p~n", [Session, ChannelName, Message])
+                            error_logger:error_msg("[CHAT] SessionÊ~p sending message to channel '~s' in which he is no member: ~p~n", [Session, ChannelName, Message])
                     end;
                 [] ->
-                    error_logger:error_msg("Session ~p sending message to non-existing channel '~s': ~p~n", [Session, ChannelName, Message])
+                    error_logger:error_msg("[CHAT] Session ~p sending message to non-existing channel '~s': ~p~n", [Session, ChannelName, Message])
             end;
         false ->
+            Session:add_message(?ERROR_20003),
             ok
     end,
     {noreply, State};
@@ -133,6 +152,7 @@ handle_cast({chat_part, Session, ChannelName}, State = #state{table=Tid}) ->
             ),            
             Session:add_message({chat_part_self, ChannelName});
         [] ->
+            error_logger:error_msg("[CHAT] Session ~p parting from a non-existing channel '~s'", [Session, ChannelName]),
             ok
     end,
     {noreply, State}.

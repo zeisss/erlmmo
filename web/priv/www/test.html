@@ -27,7 +27,7 @@
                     
                     same(result, {'type':'error', 'code': 001, "message":"Invalid sessionkey."}, "Invalid session error");
                     
-                    start();    
+                    start();
                 });
                 
               });
@@ -57,7 +57,7 @@
         
         module("Chat");
         test("sending and receiving messages", function() {
-            expect(6);
+            expect(8);
             stop(6000);
             
             auth_login("Chat-Test", "mypassword$", function(sessionkey) {
@@ -68,7 +68,6 @@
                     
                     equals(events.length, 1, "Receiving one event");
                     
-                    
                     same(events[0], {'type':"chat_join_self", 'name':"Global", 'players': ['Chat-Test']}, "Receive self-join message");
                     
                     chat_send(sessionkey, "Global", "QUnit Test-Message", function(result) {
@@ -76,11 +75,23 @@
                        
                         event_get(sessionkey, function(events) {
                            
-                           same(events, [{'type':"chat_send", 'name':'Global', 'player':"Chat-Test", 'message':"QUnit Test-Message"}], "Receive our own chat message");
+                          same(events, [{'type':"chat_send", 'name':'Global', 'player':"Chat-Test", 'message':"QUnit Test-Message"}], "Receive our own chat message");
                            
-                           auth_logout(sessionkey);
+                          chat_join(sessionkey, "0123456789123456", function(ok) {
+                              same(ok, "OK");
+                              
+                              event_get(sessionkey, function(events){
+                                same(events, [
+                                  {'type':'error', 'code':20001, 'message': 'Invalid channelname. Unable to join.'}
+                                ]);
+                                auth_logout(sessionkey);
+                              
+                                start(); 
+                              });
+                          });
+                          
                            
-                           start();
+                           
                         });
                     });
                 });
