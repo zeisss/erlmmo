@@ -45,7 +45,10 @@
 		this.removeChannelPlayer(event.name, event.player);
 	      } else if ( event.type == "chat_send") {
 		this.addChannelMessage(event.name, event.player, event.message);
+	      } else {
+		return false;
 	      }
+	      return true;
 	    },
 	    
 	    'fireEvent': function(event_object) {
@@ -75,7 +78,10 @@
 	    },
 	    
 	    'removeChannelPlayer': function(ChannelName, Player) {
-	      this.channels[ChannelName].player.remove(Player);
+	      Players = this.channels[ChannelName].players.filter(function(x) {
+		return x != Player;
+	      });
+	      this.channels[ChannelName].players = Players;
 	      this.fireEvent(['players_changed', ChannelName]);
 	    },
 	    
@@ -260,15 +266,10 @@
 	  },
 	  
 	  'handleEvent': function(event) {
-	    knownEventTypes = ['zone_status', 'chat_join', 'chat_join_self', 'chat_part', 'chat_part_self', 'chat_send'];
-	    if ( knownEventTypes.indexOf(event.type) == -1 ) {
-	      this.messages.push(event);
-	      this.fireEvent(['new_event']);
-	    }
-	    
+	    this.messages.push(event);
+	    this.fireEvent(['new_event']);
 	  }
 	};
-	MODEL.listeners.push(model);
 	return model;
       }
       
@@ -280,6 +281,7 @@
 	    this.model.addListener(this);
 	    
 	    $("#system_log_ui").dialog({
+	      'title': 'System Log',
 	      'minWidth': 400,
 	      'minHeight': 300,
 	      'height': 300,
@@ -314,8 +316,10 @@
 	  
 	  'handleEvent': function(event) {
 	    if ( event.type == "zone_status" ) {
-	      this.updateObjects(event.players);    
+	      this.updateObjects(event.objects);
+	      return true;
 	    }
+	    return false;
 	  },
 	  
 	  'updateObjects': function(objects) {
@@ -348,14 +352,28 @@
 	  'init': function() {
 	    this.model.listeners.push(this);
 	    this.context = document.getElementById("zone_ui_canvas").getContext("2d");
+	    
+	    $("#zone_list").dialog({
+	      'title':'Zone Objects'
+	    });
 	  },
 	  'handleEvent': function(event) {
 	    if ( event[0] == "objects_updated") {
-	      this.renderObjects();
+	      this.renderObjectList();
+	      this.renderZoneObjects();
 	    }
 	  },
 	  
-	  'renderObjects': function() {
+	  'renderObjectList': function() {
+	    ul = $("#zone_list ul").html('');
+	    for ( x in this.model.objects) {
+	      obj = this.model.objects[x];
+	      
+	      ul.append('<li>' + obj.name + ' (' + obj.coord.x + ', ' + obj.coord.y + ')</li>');
+	    }
+	  },
+	  'renderZoneObjects': function() {
+	    // Use the this.context to 'draw' the known objects on to the 'background' of the UI
 	    
 	  }
 	};
@@ -402,8 +420,15 @@
 	},
 	
 	'handleEvent': function(event) {
+	  handled = false;
 	  for ( x in this.listeners ) {
-	    this.listeners[x].handleEvent(event);
+	    if ( this.listeners[x].handleEvent(event) ) {
+	      handled = true;
+	    }
+	  }
+	  
+	  if ( !handled ) {
+	    UI.SYSTEM_LOG.model.handleEvent(event);
 	  }
 	  
 	}
@@ -664,6 +689,12 @@
       
       <div id="system_log_ui" style="display:hidden; overflow:auto">
 	
+      </div>
+      
+      <div id="zone_list" style="display:hidden">
+	<ul>
+	  
+	</ul>
       </div>
       
       <div id="chat_channels_dialog" style="display:hidden">

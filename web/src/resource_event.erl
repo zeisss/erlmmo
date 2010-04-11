@@ -18,6 +18,7 @@
 -export([malformed_request/2, process_post/2]).
 
 -include_lib("webmachine/include/webmachine.hrl").
+-include_lib("include/erlmmo.hrl").
 
 -record(state, {sessionkey, session}).
 
@@ -77,7 +78,6 @@ process_post(ReqData, State = #state{session=Session}) ->
     {ok, Events} = Session:get_messages_once(),
     Content = transform_messages(Events),
     NewReqData = wrq:set_resp_body(mochijson2:encode(Content), ReqData),
-    
     {true, NewReqData, State}.
 
     
@@ -93,11 +93,19 @@ transform_message({error, Code, Message}) ->
 % ZONE
 transform_message({zone_status, SessionCoords}) ->
     {struct,  [{type, zone_status},
-               {players, lists:map(
-                    fun({{X,Y}, Session}) ->
+               {objects, lists:map(
+                    fun({{X,Y}, Object}) ->
+                        Prototype = zone_object:prototype(Object),
+                        
                         {struct, [
                             {coord, {struct, [{x,X}, {y,Y}]}},
-                            {player, transform_session(Session)}
+                            {name, Object#zone_object.name},
+                            {prototype, {struct, [
+                                {name, Prototype#zone_object_prototype.name},
+                                {description, Prototype#zone_object_prototype.description},
+                                {size, Prototype#zone_object_prototype.size},
+                                {image, Prototype#zone_object_prototype.image}
+                            ]}}
                         ]}
                     end,
                     SessionCoords
@@ -126,10 +134,6 @@ transform_message({chat_part, ChannelName, PlayerName}) ->
                {player, PlayerName}]};
 transform_message(OtherEvent) ->
     OtherEvent.
-    
-
-transform_session(Session) ->
-    Session:get_name().
     
 transform_player(Player) when is_list(Player) ->
     list_to_binary(Player);

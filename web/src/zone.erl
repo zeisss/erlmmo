@@ -7,20 +7,6 @@
 
 -include_lib("include/erlmmo.hrl").
 
-%%%
-% The zone object provides general information about the object in space.
-% It is referenced in the zone_coords table, where the id is used to reference
-% to such an object.
-% For session objects, the session is used.
--record(zone_object, {
-    id, % id = make_ref() | Session
-    name, % name = [char()] - Name to use on starmap 
-    control, % control = sessionÊ|Ênpc
-    prototype, % prototype = zone_object_prototype()
-    speed = 0 % speed = integer() - positiv: how many fields per second - negativ: How many ticks per field.
-}).
-
-
 % Other
 -export([perform_tick/1, test/0]).
 
@@ -82,9 +68,7 @@ init_space_objects([Object | Rest], State = #state{objects=ObjectsTable}) ->
         #zone_object{
             id = Ref,
             name = proplists:get_value(name, Object),
-            control = npc,
-            prototype = zone_object_storage:load(ProtoType),
-            speed = 0
+            prototype = zone_object_storage:load(ProtoType)
         }
     ),
     
@@ -114,8 +98,17 @@ handle_cast({session_kill, Session}, State = #state{coords=CTid, paths=PTid}) ->
     
     {noreply, State};
     
-handle_cast({session_join, Session, Coords}, State = #state{coords=CTid}) ->
+handle_cast({session_join, Session, Coords}, State = #state{objects=OTid}) ->
     i_coords_add(Coords, Session, State),
+    
+    ets:insert(OTid, 
+        #zone_object{
+            id=Session,
+            name=Session:get_name(),
+            prototype=zone_object_storage:load(player_ship)
+        }
+    ),
+    
     {noreply, State};
     
 handle_cast({session_set_course, Session, Path}, State = #state{paths=PTid}) ->
@@ -133,7 +126,7 @@ handle_info(perform_tick, State = #state{id=ZoneId, paths=PTid, coords=CTid}) ->
     
     ok = internal_perform_tick(Coords, State),
     
-    ok = internal_send_zone_status(ZoneId, State),
+    ok = broadcast_zone_status(ZoneId, State),
     
     {noreply, State}.
 
@@ -151,46 +144,46 @@ code_change(_OldVsn, State, _Extra) ->
 
 % -----------
     
-internal_send_zone_status(ZoneId, State = #state{coords=CTid, objects=OTid}) ->
+broadcast_zone_status(ZoneId, State = #state{coords=CTid, objects=OTid}) ->
     
+    % First, generate a list of {Coord, ZoneObject}s
     ListOfCoordSessions = lists:flatten(
         lists:map(
             fun({Coord, References}) ->
                 lists:map(
                     fun(Reference) ->
                         [Object] = ets:lookup(OTid, Reference),
-                        {Coord, Reference, Object}
+                        {Coord, Object}
                     end,
                     References)
             end,
             ets:tab2list(CTid)
         )
     ),
-    % now we have ListOfCoordSessions = [{Coord, Session}]
+    % now we have ListOfCoordSessions = [{Coord, ZoneObject}]
     
     lists:foreach(
-        fun({_Coord, Session, Object} = Self) ->
-            case Object#zone_object.control of
-                npc -> ok;
-                session ->
-                    SeeableObjects = internal_seeable_objects(ListOfCoordSessions, Self),
+        fun({_Coord, Object} = Self) ->
+            case zone_object:can_receive_status(Object) of
+                false -> ok;
+                true ->
+                    % Calculate which ships this Object can see
+                    SeeableObjects = calculate_seeable_objects(ListOfCoordSessions, Self),
                     
-                    Session:add_message ({
-                        zone_status,
-                        SeeableObjects
-                    })
+                    % Send it to him.
+                    zone_object:send_status(Object, SeeableObjects)
             end
         end,
         ListOfCoordSessions
     ),
     ok.
 
-internal_seeable_objects(ListOfCoordSessions, {{CX,CY}, _, SelfObject}) ->
+calculate_seeable_objects(ListOfCoordSessions, {{CX,CY}, SelfObject}) ->
     lists:filter(
-        fun({{X,Y}, _, Object}) ->
-            SelfProto = Object#zone_object.prototype,
-            Proto = SelfObject#zone_object.prototype,
-            i_can_see({X,Y}, Proto#zone_object_prototype.size, {CX, CY}, SelfProto#zone_object_prototype.size, 11)
+        fun({{X,Y}, Object}) ->
+            SelfProto = zone_object:prototype(Object),
+            Proto = zone_object:prototype(SelfObject),
+            zone_object:can_see({X,Y}, Proto#zone_object_prototype.size, {CX, CY}, SelfProto#zone_object_prototype.size, 11)
         end,
         ListOfCoordSessions
     ).
@@ -209,13 +202,20 @@ internal_perform_tick_sessions(Coords, [Session| Sessions], State = #state{paths
     % Check if the session wants to move
     case ets:lookup(PTid, Session) of
         [] -> ok; % No, nothing to do
+        [{Session, []}] ->
+            ok; 
         [{Session, Paths}] ->
             [NextCoord|RestCoords] = Paths,
             
             case validation:validate_next_coords(NextCoord, Coords) of
                 true ->
                     % Store the path coords, we do not handle
-                    ets:insert(PTid, {Session, RestCoords}),
+                    case RestCoords of
+                        [] ->
+                            ets:delete(PTid, Session);
+                        _ ->
+                            ets:insert(PTid, {Session, RestCoords})
+                    end,
                     
                     % Ok, now we want to move the session to 'NextCoord':
                     
@@ -250,21 +250,6 @@ i_coords_delete(Coords = {_,_}, Reference, _State = #state{coords=CTid}) ->
             ets:insert(CTid, {Coords, NewSessions})
     end.
     
-% TODO: This can surely be optimized
-i_can_see(_CoordsA = {X1,Y1}, SizeA, _CoordsB = {X2, Y2}, SizeB, MaxRange) when is_integer(SizeA), is_integer(SizeB) ->
-    % Pythagoras
-    % a*a + b*b = c*c
-    % with a = abs(X1 - X2)
-    %      b = abs(Y1 - Y2)
-    %      c = the range between CoordsA and CoordsB
-    %
-    A = abs(X1 - X2),
-    B = abs(Y1 - Y2),
-    C = math:sqrt(math:pow(A, 2) + math:pow(B,2)),
-    
-    SizeA + MaxRange + SizeB > C.
-    
-    
 test() ->
     {ok, Pid} = start_link([{id, zone_test}, {timer, no_timer}]),
     {ok, ApiKey} = session_master:login(<<"Miro">>, no_password),
@@ -284,7 +269,7 @@ test() ->
     timer:sleep(500),
     {ok, [{zone_status,
         [
-            {{0,1}, S}
+            {{0,1}, _}
         ]
     }]} = S:get_messages_once(),
     

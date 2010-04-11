@@ -118,7 +118,7 @@ handle_cast({zone_set_course, Session, Path}, State = #state{zone_sessions=ZoneS
         [] -> % No zone with this ID
             error_logger:error_msg("[ZONEMASTER] Session ~p has no zone. Must join a zone first.", [Session]),
             ok;
-        [ZonePid] -> % Found the zone
+        [{Session, ZonePid}] -> % Found the zone
             zone:session_set_course(ZonePid, Session, Path),
             ok
     end,
