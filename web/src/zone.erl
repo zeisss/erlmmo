@@ -163,7 +163,7 @@ broadcast_zone_status(ZoneId, State = #state{coords=CTid, objects=OTid}) ->
     % now we have ListOfCoordSessions = [{Coord, ZoneObject}]
     
     lists:foreach(
-        fun({_Coord, Object} = Self) ->
+        fun({Coord, Object} = Self) ->
             case zone_object:can_receive_status(Object) of
                 false -> ok;
                 true ->
@@ -171,7 +171,7 @@ broadcast_zone_status(ZoneId, State = #state{coords=CTid, objects=OTid}) ->
                     SeeableObjects = calculate_seeable_objects(ListOfCoordSessions, Self),
                     
                     % Send it to him.
-                    zone_object:send_status(Object, SeeableObjects)
+                    zone_object:send_status(Object, Coord, SeeableObjects)
             end
         end,
         ListOfCoordSessions

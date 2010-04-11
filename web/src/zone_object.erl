@@ -2,7 +2,7 @@
 
 -include_lib("include/erlmmo.hrl").
 
--export([is_player_ship/1, can_receive_status/1, send_status/2]).
+-export([is_player_ship/1, can_receive_status/1, send_status/3]).
 
 -export([can_see/5, prototype/1, test/0]).
 
@@ -11,11 +11,11 @@
 can_receive_status(ZoneObject) ->
     is_player_ship(ZoneObject).
 
-send_status(Object, Message) when not(is_reference(Object#zone_object.id)) ->
+send_status(Object, Coord, VisibleObjects) when not(is_reference(Object#zone_object.id)) ->
     Session = Object#zone_object.id,
     
     Session:add_message (
-        {zone_status, Message}
+        {zone_status, Coord, Object, VisibleObjects}
     ).
 
 
