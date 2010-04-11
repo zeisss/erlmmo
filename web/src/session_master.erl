@@ -6,12 +6,12 @@
 
 -export([session_add_message/2, session_get_messages/1]).
 
--record(state, {session_counter=0, table, session_table, timeout_table}).
+-record(state, {session_counter=0, timer, table, session_table, timeout_table}).
 
 
 -define(SERVER, {global, ?MODULE}).
 -define(TABLE, sessions).
--define(TIMEOUT, 5 * 60 * 1000). % Timeout, before checking for timeouts
+-define(TIMEOUT, timer:minutes(1)). % Timeout, before checking for timeouts
 -define(SESSION_TIMEOUT, 5 * 60 * 1000 * 1000). % Timeout, after which sessions gets dropped (MacroSeconds?)
 
 start_link() ->
@@ -67,14 +67,15 @@ init([]) ->
     Tid = ets:new(?TABLE, [set, protected, {keypos,2}]),
     TimeoutTid = ets:new(timeout_table, [set, protected]),
     SessionTid = ets:new(session_messages, [set, protected]),
+    TimerRef = timer:send_interval(?TIMEOUT, timeout),
     
-    {ok, #state{table=Tid, timeout_table=TimeoutTid, session_table=SessionTid}}.
+    {ok, #state{table=Tid, timeout_table=TimeoutTid, session_table=SessionTid, timer=TimerRef}}.
     
 handle_call({login, Name, Password}, _From, State = #state{table=Tid, timeout_table=TimeoutTid}) ->
     CredentialsCheck = true, % TODO: Implement a credentials check here
     case CredentialsCheck of
         false ->
-            {reply, {error, invalid_credentials}, State, ?TIMEOUT};
+            {reply, {error, invalid_credentials}, State};
         true ->
             case ets:match_object(Tid, {session, '_', Name}) of
                 [Session] -> session_logout(Session, State);
@@ -92,10 +93,10 @@ handle_call({login, Name, Password}, _From, State = #state{table=Tid, timeout_ta
                     ets:insert(Tid, NewSession),
                     ets:insert(TimeoutTid, {NewSession, erlang:now()}),
                     
-                    {reply, {ok, ApiKey}, State#state{session_counter=Counter+1}, ?TIMEOUT};
+                    {reply, {ok, ApiKey}, State#state{session_counter=Counter+1}};
                 UnknownError ->
                     error_logger:error_msg("New session for ~s raised error during init: ~p~n", [Name, UnknownError]),
-                    {reply, {error, failed_while_init_session}, State, ?TIMEOUT}
+                    {reply, {error, failed_while_init_session}, State}
             end
     end;
 
@@ -110,8 +111,8 @@ handle_call(logout_all, _From, State = #state{table=Tid}) ->
     
 handle_call({logout, ApiKey}, _From, State = #state{table=Tid}) ->
     case ets:lookup(Tid, ApiKey) of
-        [Session] -> {reply, session_logout(Session, State), State, ?TIMEOUT};
-        [] -> {reply, no_session, State, ?TIMEOUT};
+        [Session] -> {reply, session_logout(Session, State), State};
+        [] -> {reply, no_session, State};
         Result -> {stop, {multiple_sessions_for_apikey, ApiKey, Result}, no_session, State}
     end;
     
@@ -119,9 +120,9 @@ handle_call({find, ApiKey}, _From, State = #state{table=Tid, timeout_table=Timeo
     case ets:lookup(Tid, ApiKey) of
         [Session] ->
             ets:insert(TimeoutTid, {Session, erlang:now()}),
-            {reply, Session, State, ?TIMEOUT};
+            {reply, Session, State};
         [] ->
-            {reply, no_session, State, ?TIMEOUT};
+            {reply, no_session, State};
         Result ->
             error_logger:error_msg("Invalid internal state with multiple sessions for the same apikey: ~s~n", [ApiKey]),
             Result = no_session,
@@ -141,7 +142,7 @@ handle_call({session_add_message, Session, Message}, _From, State = #state{sessi
     end,
     
     ets:insert(Tid, {Session, Messages ++ [Message]}),
-    {reply, ok, State, ?TIMEOUT};
+    {reply, ok, State};
     
 handle_call({session_get_messages, Session}, _From, State = #state{session_table=Tid}) ->
     Messages = case ets:lookup(Tid, Session) of
@@ -150,16 +151,16 @@ handle_call({session_get_messages, Session}, _From, State = #state{session_table
     end,
     true = ets:delete(Tid, Session),
     
-    {reply, {ok, Messages}, State, ?TIMEOUT}.    
+    {reply, {ok, Messages}, State}.    
     
 handle_cast(_Message, State) ->
-    {noreply, State, ?TIMEOUT}.
+    {noreply, State}.
     
 handle_info(timeout, State) ->
     error_logger:info_msg("Performing session timeout cleanup~n"),
     case internal_kill_timeouts(State) of
         ok ->
-            {noreply, State, ?TIMEOUT};
+            {noreply, State};
         Error ->
             error_logger:error_msg("Error while performing timeout cleanup: ~P~n", [Error]),
             {stop, {error, while_performing_cleanup, Error}, State}
