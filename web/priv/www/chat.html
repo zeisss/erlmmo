@@ -1,7 +1,7 @@
 ﻿<html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/> 
-    <title>My Chat</title>
+    <title>ErlMMO</title>
     
     <link type="text/css" href="css/ui-lightness/jquery-ui-1.8.custom.css" rel="stylesheet" />
     <script src="js/jquery-1.4.2.js"></script>
@@ -118,13 +118,16 @@
 	    });
 	    
 	    
-	    $('#chat_window').dialog({
+	    var chat = $('#chat_window').dialog({
 	      'title': 'Chat',
 	      'minHeight': 300,
 	      'height': 300,
 	      'minWidth': 400,
-	      'width': 400
+	      'width': 490
 	    });
+	    chat.parent().css("top", "");
+	    chat.parent().css("bottom", "20px");
+	    chat.parent().css("left", "20px");
 	    
 	    // The "Say" button
 	    $("#chat_window").submit(this.eventSendMessage);
@@ -284,14 +287,19 @@
 	  'init': function() {
 	    this.model.addListener(this);
 	    
-	    $("#system_log_ui").dialog({
+	    var log = $("#system_log_ui").dialog({
 	      'title': 'System Log',
 	      'minWidth': 400,
 	      'minHeight': 300,
 	      'height': 300,
 	      'width': 400
 	    });
+	    log.parent().css("top", "");
+	    log.parent().css("bottom", "20px");
+	    log.parent().css("left", "");
+	    log.parent().css("right", "20px");
 	  },
+	  
 	  
 	  'renderMessages': function() {
 	    div = $("#system_log_ui").html('');
@@ -375,16 +383,28 @@
 	    this.context.canvas.width = this.visibleFieldsHorizontal * this.fieldRenderWidth;
 	    this.context.canvas.height = this.visibleFieldsVertical * this.fieldRenderHeight;
 	    
-	    $("#zone_list").dialog({
-	      'title':'Zone Objects'
+	    var list = $("#zone_list").dialog({
+	      'title':'Zone Objects',
+	      'width': 250,
+	      'height': 550
 	    });
+	    list.parent().css("top", "60px");
+	    list.parent().css("left", "");
+	    list.parent().css("right", "20px");
 	    
-	    $("#zone_ui_canvas").click(this.event_click);
+	    $("#zone_ui_canvas").click(this.event_click)
+			        .mousemove(this.event_mousemove);
+		    
 	    
 	    this.redraw();
 	  },
 	  'event_click': function(event) {
 	    
+	  },
+	  
+	  'event_mousemove': function(event) {
+	    UI.ZONE.x = event.clientX;
+	    UI.ZONE.y = event.clientY;
 	  },
 	  
 	  'handleEvent': function(event) {
@@ -419,7 +439,7 @@
 	    for ( x in this.model.objects) {
 	      var obj = this.model.objects[x];
 	      
-	      ul.append('<li>' + obj.name + ' (' + obj.coord.x + ', ' + obj.coord.y + ')</li>');
+	      ul.append('<li>' + obj.name + ' (' + obj.prototype.name + ') [' + obj.coord.x + ', ' + obj.coord.y + ']</li>');
 	    }
 	  },
 
@@ -433,10 +453,21 @@
 	    
 	    this.renderZoneGrid(ctx);
 	    this.renderZoneObjects(ctx);
+	    this.renderZoneMouse(ctx);
 	    ctx.restore();
 	  },
 	  
 	  
+	  'renderZoneMouse': function(ctx) {
+	    ctx.save();
+	    
+	    ctx.beginPath();
+	    ctx.arc(this.x, this.y, 80, 0, 360, false);
+	    ctx.fill();
+	    
+	    
+	    ctx.restore();
+	  },
 	  
 	  'renderZoneGrid': function(ctx) {
 	    ctx.save();
@@ -459,13 +490,34 @@
 	      var Coord = this.coordinates2point(object.coord.x, object.coord.y);
 	      
 	      ctx.beginPath();
-	      ctx.moveTo(5 + Coord[0], 5 + Coord[1]);
-	      ctx.lineTo(-5 + Coord[0] + this.fieldRenderWidth,
-			 -5 + Coord[1] + this.fieldRenderHeight);
 	      
-	      ctx.moveTo(Coord[0] + this.fieldRenderWidth - 5, 5 + Coord[1]);
-	      ctx.lineTo(Coord[0] + 5, Coord[1] + this.fieldRenderHeight - 5);
-	      ctx.stroke();
+	      switch ( object.prototype.size )
+	      {
+		case 1:
+		    ctx.moveTo(5 + Coord[0], 5 + Coord[1]);
+		    ctx.lineTo(-5 + Coord[0] + this.fieldRenderWidth,
+			       -5 + Coord[1] + this.fieldRenderHeight);
+		    
+		    ctx.moveTo(Coord[0] + this.fieldRenderWidth - 5, 5 + Coord[1]);
+		    ctx.lineTo(Coord[0] + 5, Coord[1] + this.fieldRenderHeight - 5);
+		    ctx.stroke();
+		    break;
+		default:
+		    var x = Coord[0] + this.fieldRenderWidth / 2;
+		    var y = Coord[1] + this.fieldRenderHeight / 2;
+		    
+		    var range = this.fieldRenderWidth / 2 + (this.fieldRenderWidth * (object.prototype.size -1))
+		    
+		    ctx.arc (
+			  x,
+			  y,
+			  range,
+			  0,
+			  360,
+			  false);
+		    ctx.fill();
+		    break;
+	      }
 	      ctx.closePath();
 	      
 	    }
@@ -605,7 +657,7 @@
 	},
 	
 	'showChatChannelDialog': function() {
-	  $("#chat_channels_dialog").dialog({
+	  var chat = $("#chat_channels_dialog").dialog({
 	    'closeOnEscape': true,
 	    'draggable': true,
 	    'title': 'Channels',
