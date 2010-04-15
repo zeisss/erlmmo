@@ -17,7 +17,7 @@ function auth_login(username, password, callback) {
  */
 function auth_logout (sessionkey, callback) {
     jQuery.post("/v1/auth/logout?apikey=" + encodeURIComponent(sessionkey), "", function(result) {
-        if (callback != null) {
+        if (callback !== undefined) {
             callback(result);
         }
     }, "json");
@@ -39,7 +39,7 @@ function chat_send(sessionkey, channel, message, callback) {
         "/v1/" + encodeURIComponent(sessionkey) + "/chat?message=" + encodeURIComponent(message) + "&channel=" + encodeURIComponent(channel),
         "",
         function (result) {
-            if (callback != null) {
+            if (callback !== undefined) {
                 callback(result);
             }
         },
@@ -52,7 +52,7 @@ function chat_join(sessionkey, channel, callback) {
         "/v1/" + encodeURIComponent(sessionkey) + "/chat/" + encodeURIComponent(channel),
         "",
         function(result) {
-            if ( callback != null ) {
+            if ( callback !== undefined ) {
                 callback(result);
             }
         },
@@ -66,7 +66,7 @@ function chat_part(sessionkey, channel, callback) {
         "/v1/" + encodeURIComponent(sessionkey) + "/chat/" + encodeURIComponent(channel) + "?action=part",
         "",
         function(result) {
-            if ( callback != null ) {
+            if ( callback !== undefined) {
                 callback(result);
             }
         },
