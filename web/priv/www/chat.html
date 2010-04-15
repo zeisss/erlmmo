@@ -4,6 +4,8 @@
     <title>ErlMMO</title>
     
     <link type="text/css" href="css/ui-lightness/jquery-ui-1.8.custom.css" rel="stylesheet" />
+    <link type="text/css" href="css/erlmmo-ui.css" rel="stylesheet" />
+    
     <script src="js/ext/jquery-1.4.2.js"></script>
     <script src="js/ext/jquery-ui-1.8.custom.min.js"></script>
     
@@ -14,112 +16,9 @@
     <script src="js/erlmmo-ui-systemlog.js"></script>
     <script src="js/erlmmo-ui.js"></script>
     
-    <style>
-    	#chat_window {
-    	  position:relative;
-	  margin:0px;
-	  padding:0px;
-    	}
-	#chat_window .channels {
-	  position:relative;
-	  top:0px;
-	  left:0px;
-	  right:0px;
-	  height:30px;
-	  
-	  padding-left:5px;
-	  padding-top:3px;
-	  
-	  
-	}
-	#chat_window .channels ul {
-	  margin: 0;
-	  padding: 2px;
-	  cursor: default;
-	  list-style-type: none;
-	}
-	#chat_window .channels ul li {
-	  margin-left:3px;
-	  margin-right:3px;
-	  margin-top:2px;
-	  padding:3px;
-	  display:inline;
-	  /*
-	  border-top:1px black solid;
-	  border-right:1px black solid;
-	  border-left:1px black solid;
-	  */
-	}
-	#chat_window .channels ul li.selected {
-	  text-decoration:underline;
-	  text-weight:bold;
-	}
-	
-	#chat_window .channel_sessions {
-	  overflow: scroll;
-	  
-	  position:absolute;
-	  top:30px;
-	  right:0px;
-	  width:150px;
-	  bottom:35px;
-	  
-	}
-    	#chat_window #chat_messages {
-	  overflow:scroll;
-	  padding:3px;
-	  
-	  position:absolute;
-	  
-	  top:30px;
-	  right:150px;
-	  left:0px;
-	  bottom:35px;
-    	}
-	
-	#chat_window #chat_user {
-	  padding:3px;
-	  position:absolute;
-	  left:0px;
-	  right:0px;
-	  bottom:0px;
-	  height:30px;
-	}
-	/** ================================================================ */
-	#chat_channels_dialog ul li {
-	  cursor:hand;
-	}
-	/** ================================================================ */
-	
-	#navbar {
-	  top:0px;
-	  left:0px;
-	  right:0px;
-	  height:30px;
-	  color:white;
-	}
-	
-	
-	#window_pane {
-	  top:35px;
-	  left:0px;
-	  bottom:0px;
-	  right:0px;
-	  position:absolute;
-	  background-color:gray;
-	  z-index:255;
-	}
-	
-    </style>	
   </head>
   <body>
     <div id="navbar">
-      <a href="test.html">Tests</a>
-      <span style="float:right">
-	<a href="javascript:UI.CHAT.show()">Chat</a>
-	<a href="javascript:UI.showChatChannelDialog()">Channels</a>
-	<a href="javascript:UI.logout()">Logout</a>
-      </span>
     </div>
     
     

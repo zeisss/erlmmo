@@ -22,6 +22,7 @@ function chat_model() {
     
     'init': function () {
       MODEL.listeners.push(this);
+      
     },
     
     'handleEvent': function (event) {
@@ -95,6 +96,7 @@ function chat_model() {
     }
       
   };
+  
   return that;
 }
    
@@ -111,6 +113,53 @@ function chat_ui() {
         return that.handleChatModelEvent(event);
       });
       
+      UI.registerNavBarAction({
+        'label': 'Channels',
+        'callback': function() {
+          var chat = $("#chat_channels_dialog").dialog({
+                'closeOnEscape': true,
+                'draggable': true,
+                'title': 'Channels',
+                'buttons': {
+                  'New': function() {
+                    UI.input({
+                      'message': 'Enter the name of the new channel:',
+                      'callback': function(input_text) {
+                        chat_join(MODEL.sessionkey, input_text);
+                        $("#chat_channels_dialog").dialog('destroy');
+                      }
+                    });
+                  }
+                }
+          });
+              
+          $("#chat_channels_dialog ul").html("<li>Loading ...</li>");
+              
+          chat_get_all_channels(function(channels) {
+                var ul = $("#chat_channels_dialog ul");
+                ul.html('');
+                
+                for (var i in channels) {
+                  ul.append('<li>' + channels[i] + '</li>');
+                }
+                
+                $("#chat_channels_dialog ul li").click(function() {
+                  var channelName = $(this).text();
+                  chat_join(MODEL.sessionkey, channelName);
+                  $("#chat_channels_dialog").dialog('destroy');
+                });
+              });
+          }
+      });
+      
+      
+      UI.registerNavBarAction({
+       'label': 'Chat',
+       'callback': function() {
+         that.show();
+       }
+      });
+      
       var chat = $('#chat_window').dialog({
         'title': 'Chat',
         'minHeight': 300,
@@ -121,6 +170,9 @@ function chat_ui() {
       chat.parent().css("top", "");
       chat.parent().css("bottom", "20px");
       chat.parent().css("left", "20px");
+      
+      
+      
       
       // The "Say" button
       $("#chat_window").submit(function(event) {
@@ -243,6 +295,6 @@ function chat_ui() {
       $("#chat_window").dialog('open');
     }
   };
-     
+  that.init();
   return that;
 }

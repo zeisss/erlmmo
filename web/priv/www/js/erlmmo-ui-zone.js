@@ -14,6 +14,9 @@ function zone_model() {
     'objects': [],
   
     'handleEvent': function(event) {
+      if ( event.type == "zone_info" ) {
+        
+      }
       if ( event.type == "zone_status" ) {
         this.selfObject = event.self;
       
@@ -89,8 +92,8 @@ function zone_ui() {
        
     'event_mousemove': function(event) {
         
-      var x = (event.clientX - this.context.canvas.offsetLeft) / this.context.canvas.clientWidth;
-      var y = (event.clientY - this.context.canvas.offsetTop) / this.context.canvas.clientHeight;
+      var x = (event.pageX - this.context.canvas.offsetLeft) / this.context.canvas.clientWidth;
+      var y = (event.pageY - this.context.canvas.offsetTop) / this.context.canvas.clientHeight;
       
       this.x = x * this.context.canvas.width;
       this.y = y * this.context.canvas.height;
@@ -124,6 +127,9 @@ function zone_ui() {
       return [ tmpX, tmpY ];
     },
     
+    
+    
+    
     'renderObjectList': function() {
       var ul = $("#zone_list ul").html('');
       for ( var x in this.model.objects) {
@@ -141,26 +147,27 @@ function zone_ui() {
       var h = ctx.canvas.height;
       ctx.clearRect(0,0, w, h);
       
-      this.renderZoneGrid(ctx);
-      this.renderZoneObjects(ctx);
-      this.renderZoneMouse(ctx);
+      this.drawZoneGrid(ctx);
+      this.drawZoneObjects(ctx);
+      this.drawZoneMouse(ctx);
       ctx.restore();
     },
     
     
-    'renderZoneMouse': function(ctx) {
+    'drawZoneMouse': function(ctx) {
       ctx.save();
       
       ctx.beginPath();
-      ctx.arc(this.x, this.y, 80, 0, 360, false);
+      ctx.arc(this.x, this.y, this.fieldRenderHeight * 0.4, 0, 360, false);
       ctx.fill();
       
       
       ctx.restore();
     },
     
-    'renderZoneGrid': function(ctx) {
+    'drawZoneGrid': function(ctx) {
       ctx.save();
+      ctx.strokeStyle = "rgb(190,190,190)";
       
       for ( var x = 0; x <= ctx.canvas.width; x += this.fieldRenderWidth) {
         for ( var y = 0; y <= ctx.canvas.height; y+= this.fieldRenderHeight) {
@@ -172,7 +179,7 @@ function zone_ui() {
       ctx.restore();
     },
     
-    'renderZoneObjects': function(ctx) {
+    'drawZoneObjects': function(ctx) {
       ctx.save();
       
       for ( var i in this.model.objects ) {
@@ -215,6 +222,6 @@ function zone_ui() {
       ctx.restore();
     }
   };
-     
+  that.init();
   return that;
 }

@@ -1,0 +1,101 @@
+#chat_window {
+    position:relative;
+    margin:0px;
+    padding:0px;
+  }
+  #chat_window .channels {
+    position:relative;
+    top:0px;
+    left:0px;
+    right:0px;
+    height:30px;
+    
+    padding-left:5px;
+    padding-top:3px;
+    
+    
+  }
+  #chat_window .channels ul {
+    margin: 0;
+    padding: 2px;
+    cursor: default;
+    list-style-type: none;
+  }
+  #chat_window .channels ul li {
+    margin-left:3px;
+    margin-right:3px;
+    margin-top:2px;
+    padding:3px;
+    display:inline;
+    /*
+    border-top:1px black solid;
+    border-right:1px black solid;
+    border-left:1px black solid;
+    */
+  }
+  #chat_window .channels ul li.selected {
+    text-decoration:underline;
+    text-weight:bold;
+  }
+  
+  #chat_window .channel_sessions {
+    overflow: scroll;
+    
+    position:absolute;
+    top:30px;
+    right:0px;
+    width:150px;
+    bottom:35px;
+    
+  }
+  #chat_window #chat_messages {
+    overflow:scroll;
+    padding:3px;
+    
+    position:absolute;
+    
+    top:30px;
+    right:150px;
+    left:0px;
+    bottom:35px;
+  }
+  
+  #chat_window #chat_user {
+    padding:3px;
+    position:absolute;
+    left:0px;
+    right:0px;
+    bottom:0px;
+    height:30px;
+  }
+  /** ================================================================ */
+  #chat_channels_dialog ul li {
+    cursor:pointer;
+  }
+  /** ================================================================ */
+  
+  #navbar {
+    top:0px;
+    left:0px;
+    right:0px;
+    height:30px;
+    color:black;
+  }
+  #navbar * {
+    padding-right:8px;
+  }
+  #navbar span {
+    cursor:pointer;
+    color:blue;
+  }
+  
+  
+  #window_pane {
+    top:35px;
+    left:0px;
+    bottom:0px;
+    right:0px;
+    position:absolute;
+    background-color:gray;
+    z-index:255;
+  }

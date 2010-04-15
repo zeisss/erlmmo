@@ -80,5 +80,6 @@ function system_log_ui() {
       this.renderMessages();
     }
   };
+  that.init();
   return that;
 }
