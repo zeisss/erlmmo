@@ -40,7 +40,7 @@ init([]) ->
 	   {zone_master, start_link, []},
 	   permanent, 5000, worker, dynamic},
     
-    {ok, ListOfZoneNames} = file:consult(filename:join(
+    {ok, [ListOfZoneNames]} = file:consult(filename:join(
                          [filename:dirname(code:which(?MODULE)),
                           "..", "priv", "zones", "zone.conf"])),
     

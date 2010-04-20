@@ -10,8 +10,7 @@
 
 
 -define(SERVER, {global, ?MODULE}).
--define(TABLE, sessions).
--define(TIMEOUT, timer:minutes(1)). % Timeout, before checking for timeouts
+-define(TIMEOUT, timer:minutes(10)). % Timeout, before checking for timeouts
 -define(SESSION_TIMEOUT, 5 * 60 * 1000 * 1000). % Timeout, after which sessions gets dropped (MacroSeconds?)
 
 start_link() ->
@@ -64,7 +63,7 @@ session_get_messages(Session) ->
 % ------------------------------------------------------------------------------
 
 init([]) ->
-    Tid = ets:new(?TABLE, [set, protected, {keypos,2}]),
+    Tid = ets:new(sessions, [set, protected, {keypos,2}]),
     TimeoutTid = ets:new(timeout_table, [set, protected]),
     SessionTid = ets:new(session_messages, [set, protected]),
     TimerRef = timer:send_interval(?TIMEOUT, timeout),
@@ -198,11 +197,7 @@ internal_kill_timeouts(State = #state{timeout_table=Tid}, Now, Session) ->
 session_logout(Session, _State = #state{table=Tid, timeout_table=TimeoutTable, session_table=SessionTid}) ->
     error_logger:info_msg("[SESSION] Logout ~p~n", [Session:get_name()]),
     
-    % Remove the session from all channels
-    chat_master:chat_kill(Session),
-    
-    % Bye bye zone
-    zone_master:kill_session(Session),
+    Session:logout(),
     
     % Clear the messages from the messages table
     ets:delete(SessionTid, Session),

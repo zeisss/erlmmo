@@ -1,6 +1,6 @@
 -module(session, [ApiKey, Name]).
 
--export([init/0, get_apikey/0, get_name/0]).
+-export([init/0, logout/0, get_apikey/0, get_name/0]).
 -export([add_message/1, get_messages_once/0]).
 -export([chat_join/1, chat_send/2, chat_part/1]).
 
@@ -14,6 +14,12 @@ init() ->
     zone_master:zone_join(THIS, zone_1, {0,0}),
     ok.
 
+logout() ->
+    % Remove the session from all channels
+    chat_master:chat_kill(THIS),
+    
+    % Bye bye zone
+    zone_master:kill_session(THIS),
 %% -----------------------------------------------------------------------------
 
 get_apikey() -> ApiKey.

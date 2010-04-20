@@ -80,3 +80,23 @@ function chat_part(sessionkey, channel, callback) {
 function chat_get_all_channels(callback) {
     jQuery.get('/v1/channels','', callback, 'json');
 }
+
+/**
+ * Sends the server the path that it should fly along.
+ *
+ * @param path an array of [x,y] elements.
+ */
+function zone_set_course(sessionkey, path, callback) {
+    var data = "[";
+    for ( x in path ) {
+        data += "[" + path[x][0] + "," + path[x][1] + "]"
+    }
+    data += "]";
+    
+    jQuery.post (
+      "/v1/" + encodeURIComponent(sessionkey) + "/zone",
+      data,
+      callback,
+      "json"
+    );
+}

@@ -3,7 +3,7 @@
 
 -record(state, {id, name, timer, objects, coords, paths}).
 
--define(TICK_TIME, timer:seconds(5)).
+-define(TICK_TIME, timer:minutes(5)).
 
 -include_lib("include/erlmmo.hrl").
 
@@ -32,7 +32,9 @@ perform_tick(ZonePid) ->
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 start_link(PropList) ->
-    gen_server:start_link(?MODULE, PropList, []).
+    ZoneId = proplists:get_value(id, PropList),
+    
+    gen_server:start_link({global, ZoneId}, ?MODULE, PropList, []).
     
 init(PropList) ->
     ZoneId = proplists:get_value(id, PropList),
@@ -101,13 +103,14 @@ handle_cast({session_kill, Session}, State = #state{coords=CTid, paths=PTid}) ->
 handle_cast({session_join, Session, Coords}, State = #state{objects=OTid}) ->
     i_coords_add(Coords, Session, State),
     
-    ets:insert(OTid, 
-        #zone_object{
-            id=Session,
-            name=Session:get_name(),
-            prototype=zone_object_storage:load(player_ship)
-        }
-    ),
+    ZoneObject = #zone_object{
+        id=Session,
+        name=Session:get_name(),
+        prototype=zone_object_storage:load(player_ship)
+    },
+    
+    ets:insert(OTid, ZoneObject),
+    zone_object:send_info(ZoneObject, State#state.name),
     
     {noreply, State};
     
@@ -181,8 +184,8 @@ broadcast_zone_status(ZoneId, State = #state{coords=CTid, objects=OTid}) ->
 calculate_seeable_objects(ListOfCoordSessions, {{CX,CY}, SelfObject}) ->
     lists:filter(
         fun({{X,Y}, Object}) ->
-            SelfProto = zone_object:prototype(Object),
-            Proto = zone_object:prototype(SelfObject),
+            Proto = zone_object:prototype(Object),
+            SelfProto = zone_object:prototype(SelfObject),
             zone_object:can_see({X,Y}, Proto#zone_object_prototype.size, {CX, CY}, SelfProto#zone_object_prototype.size, 11)
         end,
         ListOfCoordSessions

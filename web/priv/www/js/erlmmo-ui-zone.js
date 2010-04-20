@@ -4,6 +4,7 @@
 
 function zone_model() {
   var that = {
+    'zone_name': false,
     // Where is the ship currently?
     'coordinates': false,
   
@@ -15,9 +16,11 @@ function zone_model() {
   
     'handleEvent': function(event) {
       if ( event.type == "zone_info" ) {
-        
+        that.zone_name = event.name;
+        this.fireEvent(['zone_info', that.zone_name]);
+        return true;
       }
-      if ( event.type == "zone_status" ) {
+      else if ( event.type == "zone_status" ) {
         this.selfObject = event.self;
       
         this.updateObjects(event.objects);
@@ -104,6 +107,8 @@ function zone_ui() {
       if ( event[0] == "objects_updated") {
         this.renderObjectList();
         this.redraw();
+      } else if ( event[0] == "zone_info") {
+        this.renderObjectList();
       }
     },
        
@@ -131,6 +136,8 @@ function zone_ui() {
     
     
     'renderObjectList': function() {
+      $("#zone_list .zone_name").text(this.model.zone_name);
+      
       var ul = $("#zone_list ul").html('');
       for ( var x in this.model.objects) {
         var obj = this.model.objects[x];

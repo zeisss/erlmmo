@@ -91,6 +91,10 @@ transform_message({error, Code, Message}) ->
               {code, Code},
               {message, Message}]};
 % ZONE
+transform_message({zone_info, Name}) ->
+    {struct, [{type, zone_info},
+              {name, Name}]};
+              
 transform_message({zone_status, {X,Y}, SelfObject, SessionCoords}) ->
     {struct,  [{type, zone_status},
                {self, transform_zone_object({X,Y}, SelfObject)},
