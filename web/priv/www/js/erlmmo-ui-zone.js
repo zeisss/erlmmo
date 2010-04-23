@@ -94,13 +94,16 @@ function zone_ui() {
     },
        
     'event_mousemove': function(event) {
-        
-      var x = (event.pageX - this.context.canvas.offsetLeft) / this.context.canvas.clientWidth;
-      var y = (event.pageY - this.context.canvas.offsetTop) / this.context.canvas.clientHeight;
+      var x = Math.floor((event.pageX - $(this.context.canvas).parent().attr("offsetLeft")) / this.context.canvas.clientWidth * this.context.canvas.width);
+      var y = Math.floor((event.pageY - $(this.context.canvas).parent().attr("offsetTop")) / this.context.canvas.clientHeight * this.context.canvas.height);
       
-      this.x = x * this.context.canvas.width;
-      this.y = y * this.context.canvas.height;
-      this.redraw();
+      var newCoords = this.point2coordinates(x,y);
+      
+      if (newCoords[0] != this.x || newCoords[1] != this.y) {
+        this.x = newCoords[0];
+        this.y = newCoords[1];
+        this.redraw();
+      }
     },
        
     'handleEvent': function(event) {
@@ -111,7 +114,28 @@ function zone_ui() {
         this.renderObjectList();
       }
     },
-       
+      
+    /**
+     * Translates a canvas x,y pair (e.g. from a mouseclick) to the game coordinates.
+     */
+    'point2coordinates': function(x,y) {
+      if ( !this.model.selfObject ) {
+        return [0,0];
+      }
+      var coords = this.model.selfObject.coord;
+      
+      var posX = Math.floor(x / this.fieldRenderWidth);
+      var posY = Math.floor(y / this.fieldRenderWidth);
+      
+      var fieldW = Math.floor(this.visibleFieldsHorizontal / 2); // 5
+      var fieldH = Math.floor(this.visibleFieldsVertical / 2); // 4
+      
+      return [
+        coords.x + (posX - fieldW),
+        coords.y + (posY - fieldH)
+      ];
+    },
+    
     /**
      * Translate a game x,y coordinate into the upper left point of the field on the canvas
      *
@@ -165,7 +189,9 @@ function zone_ui() {
       ctx.save();
       
       ctx.beginPath();
-      ctx.arc(this.x, this.y, this.fieldRenderHeight * 0.4, 0, 360, false);
+      var point = this.coordinates2point(this.x, this.y);
+      
+      ctx.arc(point[0], point[1], this.fieldRenderHeight * 0.4, 0, 360, false);
       ctx.fill();
       
       
