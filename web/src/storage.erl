@@ -4,9 +4,62 @@
 
 -export([save_object/2, load_object/1]).
 
-save_object(Key, Value) ->
-    io:format("[STORAGE] Should be writting:~n~p~n~p~n", [Key, Value]),
-    ok.
+%%
+% Stores the given Value in the internal binary format
+% as a file.
+% This value can be reloaded by calling load_object()
+% with the same arguments.
+%
+% @see term_to_binary/1
+%
+% save_object(Key, Value) -> ok | {error, Reason}
+% Key = Value = Reason = term()
+%
+save_object(Key = {session, Session, Attribute}, Value) ->    
+    Filename = filename:join([
+        filename:dirname(code:which(?MODULE)),
+        "..",
+        "priv",
+        "session",
+        string:to_lower(binary_to_list(Session:get_name())),
+        atom_to_list(Attribute)
+    ]),
+    
+    Dirname = filename:dirname(Filename),
+    
+    case filelib:ensure_dir(Dirname) of
+        ok ->
+            Binary = term_to_binary(Value),
+            file:write_file(Filename, Binary);
+        Err -> Err
+    end.
+    
+%%%
+% load_object(Key) -> {ok, Result} | {error, Reason}
+%
+load_object(Key = {session, Session, Attribute}) when is_atom(Attribute) ->
+    Filename = filename:join(
+        [
+            filename:dirname(code:which(?MODULE)),
+            "..",
+            "priv",
+            "session",
+            string:to_lower(binary_to_list(Session:get_name())),
+            atom_to_list(Attribute)
+        ] 
+    ),
+    
+    
+    Result = file:read_file(Filename),
+    
+    case Result of
+        {error, _Reason} ->
+            % io:format("~p~n", [Reason]),
+            {ok, default_object(Key)};
+        {ok, Binary} ->
+            {ok, binary_to_term(Binary)}
+    end;
+                
 
 load_object(normal_sun) ->
     #zone_object_prototype{
@@ -46,3 +99,7 @@ load_object(player_ship) ->
         size=1,
         image="small_ship.png"
     }.
+    
+    
+default_object(_) ->
+    undefined.
