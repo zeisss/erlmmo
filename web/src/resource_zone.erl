@@ -43,28 +43,25 @@ malformed_request(ReqData, State) ->
         undefined -> {true, ReqData, State};
         _ ->
             Path = wrq:req_body(ReqData),
-            io:format("~p~n", [Path]),
             
             case Path of
                 'undefined' -> {true, ReqData, State};
                 JsonData ->
-                    List = mochijson2:decode(binary_to_term(JsonData)),
-                    
-                    io:format("~p~n", [List]),
+                    List = mochijson2:decode(JsonData),
                     
                     {not(lists:all(
                         fun(Ele) ->
                             case Ele of
-                                {B,C} when is_integer(C), is_integer(B) -> true;
+                                [B,C] when is_integer(C), is_integer(B) -> true;
                                 _ -> false
                             end
                         end,
                         List
-                     )), ReqData, State#state{path=List}}
+                     )), ReqData, State#state{path=List, sessionkey=SessionKey}}
             end
     end.
        
-resource_exists(ReqData, State = #state{sessionkey=Sessionkey}) ->
+resource_exists(ReqData, State = #state{sessionkey=Sessionkey, path=List}) ->
     case session_master:find(Sessionkey) of
         {error, no_session} -> {false, ReqData, State};
         {ok, Session} ->

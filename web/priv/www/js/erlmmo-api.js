@@ -89,9 +89,9 @@ function chat_get_all_channels(callback) {
 function zone_set_course(sessionkey, path, callback) {
     var data = "[";
     for ( x in path ) {
-        data += "[" + path[x][0] + "," + path[x][1] + "]"
+        data += "[" + path[x][0] + "," + path[x][1] + "],"
     }
-    data += "]";
+    data = data.substring(0, data.length -1) + "]";
     
     jQuery.post (
       "/v1/" + encodeURIComponent(sessionkey) + "/zone",

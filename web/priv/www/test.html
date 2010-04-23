@@ -57,8 +57,8 @@
         
         module("Chat");
         test("sending and receiving messages", function() {
-            expect(12);
-            stop(6000);
+            expect(13);
+            stop(3000);
             
             auth_login("Chat-Test", "mypassword$", function(sessionkey) {
                 ok(sessionkey != null, "Successfull login");
@@ -66,9 +66,16 @@
                 event_get(sessionkey, function(events) {
                     ok(events != null, "Valid event received.");
                     
-                    equals(events.length, 1, "Receiving one event");
+                    equals(events.length, 2, "Receiving two events");
+                    var Event1 = {'type':"chat_join_self", 'name':"Global", 'players': ['Chat-Test']};
+                    var Event2 = {'type': "zone_info", "name": "Sol System"};
                     
-                    same(events[0], {'type':"chat_join_self", 'name':"Global", 'players': ['Chat-Test']}, "Receive self-join message");
+                    same( jQuery.grep(events, function(ele) { return ele.type == "chat_join_self"; }),
+                                  [Event1], "Checking chat_join_self");
+                    same( jQuery.grep(events, function(ele) { return ele.type == "zone_info"; }),
+                          [Event2], "Checking zone_info");
+                    
+                    
                     
                     chat_send(sessionkey, "Global", "QUnit Test-Message", function(result) {
                         equals(result, "OK");
@@ -128,7 +135,7 @@
         
         
         test("Muti session chat test", function() {
-            expect(5);
+            expect(8);
             stop(1000); 
             
             auth_login("Multi-Chat1", "mypassword1", function(sessionkey1, timeout1){
@@ -141,21 +148,30 @@
                         equals(result, "OK");
                         
                         event_get(sessionkey2, function(result) {
-                            same(
-                                result,
-                                [
-                                    { 'type': 'chat_join_self',
-                                      'name': 'Global',
-                                      'players': ['Multi-Chat1', 'Multi-Chat2']
-                                    },
-                                    { 'type': 'chat_send',
+                            var Event1 = { 'type': 'chat_join_self',
+                                'name': 'Global',
+                                'players': ['Multi-Chat1', 'Multi-Chat2']
+                            };
+                            var Event2 = {
+                                      'type': 'zone_info',
+                                      'name': 'Sol System'
+                                    };
+                            var Event3 = { 'type': 'chat_send',
                                       'name':"Global",
                                       'player': 'Multi-Chat1',
                                       'message': "QUnit Test-Message #1"
-                                    }
-                                ],
-                                "Receiving initial events"                                  
-                            );
+                                    };
+                            
+                            
+                            
+                            same( result.length, 3, "Receiving three initial events" );
+                            
+                            same( jQuery.grep(result, function(ele) { return ele.type == "chat_join_self"; }),
+                                  [Event1], "Checking chat_join_self");
+                            same( jQuery.grep(result, function(ele) { return ele.type == "zone_info"; }),
+                                  [Event2], "Checking zone_info");
+                            same( jQuery.grep(result, function(ele) { return ele.type == "chat_send"; }),
+                                  [Event3], "Checking chat_send");
                             
                             chat_get_all_channels(function(channels) {
                               same(channels, ["Global"], "Checking get channels");
@@ -174,6 +190,29 @@
                 
             });
             
+        });
+  
+  
+        module("Zone");
+        test("Zone interaction", function() {
+          expect(3);
+          stop(6000);
+          
+          auth_login("Zone_Test", "no_password", function(sessionkey) {
+            ok ( sessionkey !== null, "Check sessionkey");
+            
+            zone_set_course(sessionkey, [[1,0], [2,0]], function(result) {
+              equals ( result, "OK", "Setting path" );
+              
+              auth_logout(sessionkey, function() {
+                ok(true, "Logout ok");
+                
+                start();
+              });
+            });
+            
+          });
+          
         });
   });
   </script>
