@@ -75,14 +75,16 @@ function chat_part(sessionkey, channel, callback) {
 }
 
 /**
+ * Calls the callback with an array of channel names (strings), that are available to join.
  *
+ * @returns undefined
  */
 function chat_get_all_channels(callback) {
     jQuery.get('/v1/channels','', callback, 'json');
 }
 
 /**
- * Sends the server the path that it should fly along.
+ * Sends the server the path that it should fly along. On success (Status: 2xx), the callback will be called.
  *
  * @param path an array of [x,y] elements.
  */

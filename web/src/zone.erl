@@ -3,7 +3,7 @@
 
 -record(state, {id, name, timer, objects, coords, paths}).
 
--define(TICK_TIME, timer:minutes(5)).
+-define(TICK_TIME, timer:seconds(5)).
 
 -include_lib("include/erlmmo.hrl").
 

@@ -65,6 +65,9 @@ function zone_ui() {
        
     'fieldRenderWidth' : 100,
     'fieldRenderHeight':  100,
+    
+    'actualPath': [], // The path that gets send to the server
+    'outlinePath': [], // The path drawn by the mouse movement
        
     'init': function() {
       this.model.listeners.push(this);
@@ -90,7 +93,17 @@ function zone_ui() {
       this.redraw();
     },
     'event_click': function(event) {
-         
+      var canvasX = Math.floor((event.pageX - $(this.context.canvas).parent().attr("offsetLeft")) / this.context.canvas.clientWidth * this.context.canvas.width);
+      var canvasY = Math.floor((event.pageY - $(this.context.canvas).parent().attr("offsetTop")) / this.context.canvas.clientHeight * this.context.canvas.height);
+      
+      var coords = this.point2coordinates(canvasX, canvasY);
+      
+      var path = this.calculatePath(coords[0], coords[1]);
+      
+      zone_set_course(MODEL.sessionkey, path, function() {
+        // No idea yet
+        that.actualPath = path;
+      });
     },
        
     'event_mousemove': function(event) {
@@ -102,6 +115,8 @@ function zone_ui() {
       if (newCoords[0] != this.x || newCoords[1] != this.y) {
         this.x = newCoords[0];
         this.y = newCoords[1];
+        
+        this.outlinePath = this.calculatePath(this.x, this.y);
         this.redraw();
       }
     },
@@ -114,7 +129,13 @@ function zone_ui() {
         this.renderObjectList();
       }
     },
-      
+    
+    'calculatePath': function(x,y) {
+      return [
+        [x,y]
+      ];
+    },
+    
     /**
      * Translates a canvas x,y pair (e.g. from a mouseclick) to the game coordinates.
      */
@@ -187,11 +208,13 @@ function zone_ui() {
     
     'drawZoneMouse': function(ctx) {
       ctx.save();
+      ctx.strokeStyle = "orange";
       
       ctx.beginPath();
       var point = this.coordinates2point(this.x, this.y);
+      ctx.strokeRect(point[0],point[1], this.fieldRenderWidth, this.fieldRenderHeight);
       
-      ctx.arc(point[0], point[1], this.fieldRenderHeight * 0.4, 0, 360, false);
+      
       ctx.fill();
       
       
@@ -215,6 +238,21 @@ function zone_ui() {
     'drawZoneObjects': function(ctx) {
       ctx.save();
       
+      // Draw self
+      if ( this.model.selfObject ) {
+        var object = this.model.selfObject;
+        var point = this.coordinates2point(object.coord.x, object.coord.y);
+        
+        ctx.arc ( point[0] + (this.fieldRenderWidth / 2),
+                  point[1] + (this.fieldRenderHeight / 2),
+                  this.fieldRenderWidth * 0.45,
+                  0, 360,
+                  false);
+        ctx.stroke();  
+      }
+      
+      
+      // Draw others
       for ( var i in this.model.objects ) {
         var object = this.model.objects[i];
         var Coord = this.coordinates2point(object.coord.x, object.coord.y);
@@ -223,7 +261,7 @@ function zone_ui() {
         
         if ( object.prototype.size === 1)
         {
-         
+          // Draw an X
              ctx.moveTo(5 + Coord[0], 5 + Coord[1]);
              ctx.lineTo(-5 + Coord[0] + this.fieldRenderWidth,
                         -5 + Coord[1] + this.fieldRenderHeight);

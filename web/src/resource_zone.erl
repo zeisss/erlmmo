@@ -57,11 +57,11 @@ malformed_request(ReqData, State) ->
                             end
                         end,
                         List
-                     )), ReqData, State#state{path=List, sessionkey=SessionKey}}
+                     )), ReqData, State#state{path=lists:map(fun([X,Y]) -> {X,Y} end, List), sessionkey=SessionKey}}
             end
     end.
        
-resource_exists(ReqData, State = #state{sessionkey=Sessionkey, path=List}) ->
+resource_exists(ReqData, State = #state{sessionkey=Sessionkey}) ->
     case session_master:find(Sessionkey) of
         {error, no_session} -> {false, ReqData, State};
         {ok, Session} ->

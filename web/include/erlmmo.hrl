@@ -18,6 +18,8 @@
 -record(zone_object, {
     id, % id = make_ref() | Session
     name, % name = [char()] - Name to use on starmap
+    cargo = [], % The cargo, a list of {CargoType, Amount (n > 0)} tuples
+    actions = [], % The actions users can perform (A list of {ActionType, Fun})
     prototype % prototype = zone_object_prototype()
 }).
 

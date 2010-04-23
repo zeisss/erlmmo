@@ -4,6 +4,10 @@
 
 -export([save_object/2, load_object/1]).
 
+save_object(Key, Value) ->
+    io:format("[STORAGE] Should be writting:~n~p~n~p~n", [Key, Value]),
+    ok.
+
 load_object(normal_sun) ->
     #zone_object_prototype{
         name = <<"Sun">>,
