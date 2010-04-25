@@ -46,10 +46,8 @@
     skillId,
     name,
     description,
+    primary,   % The primary attribute
+    secondary, % The secondary attribute
+    level, % The level (1-5) of the skill. Level 1 Skills are easily learnable, level 5 take months
     requirement=[]
-}).
-
--record(skill_level, {
-    skillId,
-    level
 }).
