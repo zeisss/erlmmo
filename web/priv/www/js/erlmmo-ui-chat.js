@@ -59,6 +59,8 @@ function chat_model() {
         'messages': [],
         'players': Channel.players
       };
+      
+      
       this.fireEvent(['chat_join', Channel.name]);
     },
      
@@ -269,10 +271,15 @@ function chat_ui() {
        
     'renderChannelTabs': function() {
       var ul = $("#chat_window .channels ul");
-      ul.html('');
+      ul.html('Local' in this.model.channels ? '<li>Local</li>' : '');
       for ( var name in this.model.channels) {
-        ul.append("<li>" + name + "</li>");
+        if ( name != "Local") {
+          ul.append("<li>" + name + "</li>");
+        }
       }
+      
+      
+      
       this.renderSelectedChannelTab();
          
       $("#chat_window .channels ul li").click(function() {

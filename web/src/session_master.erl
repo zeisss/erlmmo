@@ -1,5 +1,7 @@
 -module (session_master).
 
+-include_lib("include/erlmmo.hrl").
+
 -export([start_link/0, login/2, logout/1, find/1, logout_all/0]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -71,7 +73,14 @@ init([]) ->
     {ok, #state{table=Tid, timeout_table=TimeoutTid, session_table=SessionTid, timer=TimerRef}}.
     
 handle_call({login, Name, Password}, _From, State = #state{table=Tid, timeout_table=TimeoutTid}) ->
-    CredentialsCheck = true, % TODO: Implement a credentials check here
+    CredentialsCheck = case storage:load_object({session, Name, account}) of
+        {ok, undefined} ->
+            false;
+        {ok, AccountInfo = #account_info{}} ->
+            % TODO: Implement a credentials check here
+            true
+    end,
+    
     case CredentialsCheck of
         false ->
             {reply, {error, invalid_credentials}, State};
@@ -197,7 +206,8 @@ internal_kill_timeouts(State = #state{timeout_table=Tid}, Now, Session) ->
 session_logout(Session, _State = #state{table=Tid, timeout_table=TimeoutTable, session_table=SessionTid}) ->
     error_logger:info_msg("[SESSION] Logout ~p~n", [Session:get_name()]),
     
-    Session:logout(),
+    % We have to spawn this, since we block ourself otherwise
+    spawn(fun() -> Session:logout() end),
     
     % Clear the messages from the messages table
     ets:delete(SessionTid, Session),

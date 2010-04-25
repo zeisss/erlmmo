@@ -14,7 +14,7 @@
 -export([new_zone/1, new_zone/2]).
 
 % Session API
--export([zone_join/3, zone_set_course/2, kill_session/1]).
+-export([zone_join/3, zone_set_course/2, kill_session/1, chat_send/2]).
 
 % Gen_Server API
 -export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -44,7 +44,10 @@ new_zone(ZoneId, Pid) ->
 %  Coords = {X,Y}
 %  X = Y = int()
 zone_join(Session, ZoneId, Coords) ->
-    gen_server:cast(?SERVER, {zone_join, Session, ZoneId, Coords}).
+    gen_server:cast(?SERVER, {session_login, Session, ZoneId, Coords}).
+    
+chat_send(Session, Message) ->
+    gen_server:cast(?SERVER, {chat_send, Session, Message}).
     
 %%%
 % Set the course for this session along the given path.
@@ -54,12 +57,12 @@ zone_join(Session, ZoneId, Coords) ->
 %  Session = session_master:find(ApiKey)
 %  Path = [{X, Y}]
 zone_set_course(Session, Path) ->
-    gen_server:cast(?SERVER, {zone_set_course, Session, Path}).
+    gen_server:cast(?SERVER, {session_set_course, Session, Path}).
     
 %%%
 % Removes the session from the internal list of {session,zone}s
 kill_session(Session) ->
-    gen_server:cast(?SERVER, {kill_session, Session}).
+    gen_server:cast(?SERVER, {session_logout, Session}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % General API:
@@ -78,28 +81,31 @@ init([]) ->
     State = #state{zone_pids=ZonePids, zone_sessions=SessionZones},
     {ok, State}.
     
-handle_call({new_zone, ZoneId, Pid}, _From, State = #state{zone_pids=ZonePids, zone_sessions=ZoneSessions}) ->
+handle_call({new_zone, ZoneId, Pid}, _From, State = #state{zone_pids=ZonePids, zone_sessions=_ZoneSessions}) ->
     case ets:lookup(ZonePids, ZoneId) of
         [] ->
             ets:insert(ZonePids, {ZoneId, Pid});
             
-        [ZoneOldPid] -> % Oooops, we already have this zone. Lets migrate all existing sessions
+        [_ZoneOldPid] -> % Oooops, we already have this zone. Lets migrate all existing sessions
             % TODO: we need to migrate/delete the sessions for the old zone pid
             ets:insert(ZonePids, {ZoneId, Pid})
     end,    
     {reply, ok, State}.
     
-handle_cast({kill_session, Session}, State = #state{zone_sessions=ZoneSessions}) ->
+handle_cast({chat_send, Session, Message}, State = #state{zone_sessions=ZoneSessions}) ->
     case ets:lookup(ZoneSessions, Session) of
-        [{Session, ZonePid}] ->
-            zone:session_kill(ZonePid, Session),
-            ets:delete(ZoneSessions, Session);
-        [] ->
+        [] -> % No zone with this ID
+            error_logger:error_msg("[ZONEMASTER] Session ~p has no zone. Must join a zone first.", [Session]),
+            ok;
+        [{Session, ZonePid}] -> % Found the zone
+            zone:chat_send(ZonePid, Session, Message),
             ok
     end,
     {noreply, State};
     
-handle_cast({zone_join, Session, ZoneId, Coords}, State = #state{zone_pids=ZonePids, zone_sessions=ZoneSessions}) ->
+
+    
+handle_cast({session_login, Session, ZoneId, Coords}, State = #state{zone_pids=ZonePids, zone_sessions=ZoneSessions}) ->
     case ets:lookup(ZonePids, ZoneId) of
         [] -> % No zone with this ID
             error_logger:error_msg("[ZONEMASTER] Session ~p tried to join non-existing zone ~p", [Session, ZoneId]),
@@ -113,13 +119,23 @@ handle_cast({zone_join, Session, ZoneId, Coords}, State = #state{zone_pids=ZoneP
     end,
     {noreply, State};
     
-handle_cast({zone_set_course, Session, Path}, State = #state{zone_sessions=ZoneSessions}) ->
+handle_cast({session_set_course, Session, Path}, State = #state{zone_sessions=ZoneSessions}) ->
     case ets:lookup(ZoneSessions, Session) of
         [] -> % No zone with this ID
             error_logger:error_msg("[ZONEMASTER] Session ~p has no zone. Must join a zone first.", [Session]),
             ok;
         [{Session, ZonePid}] -> % Found the zone
             zone:session_set_course(ZonePid, Session, Path),
+            ok
+    end,
+    {noreply, State};
+    
+handle_cast({session_logout, Session}, State = #state{zone_sessions=ZoneSessions}) ->
+    case ets:lookup(ZoneSessions, Session) of
+        [{Session, ZonePid}] ->
+            zone:session_kill(ZonePid, Session),
+            ets:delete(ZoneSessions, Session);
+        [] ->
             ok
     end,
     {noreply, State}.

@@ -54,11 +54,15 @@ init([]) ->
 	   {webmachine_mochiweb, start, [WebConfig]},
 	   permanent, 5000, worker, dynamic},
            
+    %StorageService = {storage, {storage_backend, start_link, []}, permanent, 5000, worker, dynamic},
+           
+    SkillMaster = {skill_master, {skill_master, start_link, []}, permanent, 5000, worker, dynamic},
+           
     ChatMaster = {chat_master, {chat_master, start_link, []}, permanent, 5000, worker, dynamic},
            
     SessionMaster = {session_master, {session_master, start_link, []}, permanent, 5000, worker, dynamic},
     
     ZoneSup = {zone_sup, {zone_sup, start_link, []}, permanent, 5000, supervisor, dynamic},
            
-    Processes = [Web, SessionMaster, ChatMaster, ZoneSup],
+    Processes = [SkillMaster, Web, SessionMaster, ChatMaster, ZoneSup],
     {ok, {{one_for_one, 10, 10}, Processes}}.

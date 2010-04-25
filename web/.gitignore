@@ -1,2 +1,3 @@
 priv/log/
+priv/session/
 ebin/*

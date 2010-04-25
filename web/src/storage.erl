@@ -15,13 +15,16 @@
 % save_object(Key, Value) -> ok | {error, Reason}
 % Key = Value = Reason = term()
 %
-save_object(Key = {session, Session, Attribute}, Value) ->    
+save_object({session, Session, Attribute}, Value) when is_tuple(Session) ->
+    save_object({session, binary_to_list(Session:get_name()), Attribute}, Value);
+    
+save_object({session, AccName, Attribute}, Value) when is_atom(Attribute) ->
     Filename = filename:join([
         filename:dirname(code:which(?MODULE)),
         "..",
         "priv",
         "session",
-        string:to_lower(binary_to_list(Session:get_name())),
+        string:to_lower(AccName),
         atom_to_list(Attribute)
     ]),
     
@@ -37,14 +40,19 @@ save_object(Key = {session, Session, Attribute}, Value) ->
 %%%
 % load_object(Key) -> {ok, Result} | {error, Reason}
 %
-load_object(Key = {session, Session, Attribute}) when is_atom(Attribute) ->
+load_object({session, Session, Attribute}) when is_tuple(Session) ->
+    load_object({session, Session:get_name(), Attribute});
+load_object({session, Binary, Attr}) when is_binary(Binary), is_atom(Attr) ->
+    load_object({session, binary_to_list(Binary), Attr});
+    
+load_object(Key = {session, AccName, Attribute}) when is_atom(Attribute) ->
     Filename = filename:join(
         [
             filename:dirname(code:which(?MODULE)),
             "..",
             "priv",
             "session",
-            string:to_lower(binary_to_list(Session:get_name())),
+            string:to_lower(AccName),
             atom_to_list(Attribute)
         ] 
     ),

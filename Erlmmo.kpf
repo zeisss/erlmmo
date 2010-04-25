@@ -1,19 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Komodo Project File - DO NOT EDIT -->
 <project id="a1192bb2-64e1-f344-a9b1-7b6e3673e080" kpf_version="4" name="Erlmmo.kpf">
+<file id="009fbfae-e26b-4c44-9c51-850135bae174" idref="20049894-7923-1945-9361-df33e69e3357" name="zone_object.erl" url="web/src/zone_object.erl">
+</file>
 <file id="25250f32-a84b-d642-82ce-99e697ee0dd7" idref="20049894-7923-1945-9361-df33e69e3357" name="test.erl" url="web/src/test.erl">
+</file>
+<file id="3b345116-34ae-e44f-b356-ae8740415b50" idref="20049894-7923-1945-9361-df33e69e3357" name="skill_master.erl" url="web/src/skill_master.erl">
+</file>
+<file id="5db49265-8178-9243-9144-607c54c7e9a2" idref="20049894-7923-1945-9361-df33e69e3357" name="zone.erl" url="web/src/zone.erl">
 </file>
 <file id="7471940f-6bcc-3e4f-a8ec-61da4a6b2bc0" idref="20049894-7923-1945-9361-df33e69e3357" name="validation.erl" url="web/src/validation.erl">
 </file>
+<file id="87fb6a99-992a-4d48-824f-ebeb0a713c52" idref="20049894-7923-1945-9361-df33e69e3357" name="skill_tree.erl" url="web/src/skill_tree.erl">
+</file>
 <file id="d9244981-6456-e347-8c6c-b88a46f8bdd5" idref="20049894-7923-1945-9361-df33e69e3357" name="session.erl" url="web/src/session.erl">
 </file>
+<file id="dc4f6328-3407-4640-85b0-0dc37c0fa57a" idref="20049894-7923-1945-9361-df33e69e3357" name="zone_master.erl" url="web/src/zone_master.erl">
+</file>
 <file id="dd7f5e96-84fa-4e4e-b8e7-42f4e0d58c86" idref="20049894-7923-1945-9361-df33e69e3357" name="chat_master.erl" url="web/src/chat_master.erl">
+</file>
+<file id="e51e56d7-d274-a146-b070-885759e933f9" idref="20049894-7923-1945-9361-df33e69e3357" name="zone_sup.erl" url="web/src/zone_sup.erl">
+</file>
+<file id="f51181f1-4034-6242-a513-fa0048dc3c6c" idref="20049894-7923-1945-9361-df33e69e3357" name="storage.erl" url="web/src/storage.erl">
 </file>
 <file id="fc0c58c0-8e0c-8446-a02c-17f7c7d4978d" idref="20049894-7923-1945-9361-df33e69e3357" name="session_master.erl" url="web/src/session_master.erl">
 </file>
 <file id="1338b1cd-3a45-e64c-b7ad-b16f7a522c98" idref="6c623e6b-46ac-3743-9218-746f8c28b282" name="resource_auth.erl" url="web/src/resource_auth.erl">
-</file>
-<file id="2330f930-87aa-0d4c-9d44-6d033859bc5b" idref="6c623e6b-46ac-3743-9218-746f8c28b282" name="resource_index.erl" url="web/src/resource_index.erl">
 </file>
 <file id="242fdaed-d0e2-fd45-89dc-e672e3460520" idref="6c623e6b-46ac-3743-9218-746f8c28b282" name="resource_event.erl" url="web/src/resource_event.erl">
 </file>
@@ -22,6 +34,8 @@
 <file id="6109bcb5-85c0-3a40-ba9e-e3cd95c5e77f" idref="6c623e6b-46ac-3743-9218-746f8c28b282" name="resource_chat.erl" url="web/src/resource_chat.erl">
 </file>
 <file id="74807c95-c94d-7d46-8292-ef8bd9e211e4" idref="6c623e6b-46ac-3743-9218-746f8c28b282" name="resource_channels.erl" url="web/src/resource_channels.erl">
+</file>
+<file id="b95a8364-a672-a540-86c2-258370463bbe" idref="6c623e6b-46ac-3743-9218-746f8c28b282" name="resource_zone.erl" url="web/src/resource_zone.erl">
 </file>
 <file id="bb1cce7e-d654-9341-a0f5-8f8c7d8e00be" idref="6c623e6b-46ac-3743-9218-746f8c28b282" name="resource_status.erl" url="web/src/resource_status.erl">
 </file>

@@ -1,7 +1,7 @@
 -module (chat_master).
 
 -export([status/0, channel_list/0]).
--export([start_link/0, chat_join/2, chat_send/3, chat_part/2, chat_kill/1]).
+-export([start_link/0, chat_join/2, chat_send/3, chat_part/2, chat_kill/1, chat_list/1]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 %%%
@@ -24,22 +24,26 @@
 -define(ERROR_20001, {error, 20001, <<"Invalid channelname. Unable to join.">>}).
 -define(ERROR_20002, {error, 20002, <<"You are already in this channel.">>}).
 -define(ERROR_20003, {error, 20003, <<"Invalid chat message.">>}).
+-define(ERROR_20004, {error, 20004, <<"This is a system channel. You cannot manually join/part it.">>}).
 
 -define(SERVER, {global, ?MODULE}).
 -define(TABLE, chat_channels).
 
 -record(state, {table}).
 
--record(channel, {name, sessions=[]}).
+-record(channel, {id, system = false, name, sessions=[]}).
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% GENERIC
+
+%%
+% Starts the chat_master server
 start_link() ->
     gen_server:start_link(?SERVER, ?MODULE, [], []).
     
-
 status() ->
     gen_server:cast(?SERVER, status).
-
 
 %%
 % Returns an array of channel names.
@@ -49,16 +53,50 @@ status() ->
 channel_list() ->
     gen_server:call(?SERVER, channel_list).
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% SESSION BASED
+
 %%
-% This fails silently, if the user was already in the given session.
-chat_join(Session, Channel) when is_binary(Channel) ->
-    gen_server:cast(?SERVER, {chat_join, Session, Channel}).
+% Returns the channels the user is currently in (Except the system channels, since they are special channels).
+chat_list(Session) ->
+    gen_server:call(?SERVER, {chat_list, Session}).
+
+%%
+% This fails silently, if the user was already in the given channel.
+chat_join(Session, Channel) when is_binary(Channel) orelse is_atom(Channel) ->
+    case validation:is_system_channel_name(Channel) of % admin join/part are performed as atoms ;)
+        true ->
+            Session:add_message(?ERROR_20004);
+        false ->
+            gen_server:cast(?SERVER, {chat_join, Session, Channel})
+    end.
     
-chat_send(Session, Channel, Message) when is_binary(Channel), is_binary(Message)->
+%%
+% Broadcast the Message to all sessions in the channel.
+%
+chat_send(Session, ChannelId, Message) when ChannelId == <<"Local">> -> % Reroute 'Local' chat message
+    zone_master:chat_send(Session, Message);
+
+chat_send(Session, <<"Moderators">>, Message) -> % Urghs, I already hate this!
+    gen_server:cast(?SERVER, {chat_send, Session, channel_moderators, Message});
+chat_send(Session, <<"Admins">>, Message) ->
+    gen_server:cast(?SERVER, {chat_send, Session, channel_admins, Message});
+chat_send(Session, <<"Guild">>, Message) ->
+    gen_server:cast(?SERVER, {chat_send, Session, channel_guild, Message});
+    
+chat_send(Session, Channel, Message) when is_binary(Channel) orelse is_atom(Channel), is_binary(Message)->
     gen_server:cast(?SERVER, {chat_send, Session, Channel, Message}).
 
-chat_part(Session, Channel) when is_binary(Channel) ->
-    gen_server:cast(?SERVER, {chat_part, Session, Channel}).
+%%
+% Bye bye :P
+chat_part(Session, Channel) when is_binary(Channel) orelse is_atom(Channel)->
+    case validation:is_system_channel_name(Channel) of
+        true ->
+            Session:add_message(?ERROR_20004);
+        false ->
+            gen_server:cast(?SERVER, {chat_part, Session, Channel})
+    end.
     
 %%
 % Removes the given sesson from all chat rooms
@@ -80,15 +118,26 @@ handle_cast({chat_kill, Session}, State = #state{table=Tid}) ->
     ok = internal_kill(Session, Tid),
     {noreply, State};
     
-handle_cast({chat_join, Session, ChannelName}, State = #state{table=Tid}) ->
+handle_cast({chat_join, Session, ChannelId}, State = #state{table=Tid}) ->
+    {ChannelName, IsSystemChannel} = case is_atom(ChannelId) of
+        true ->
+            case ChannelId of
+                channel_moderators -> {<<"Moderators">>, true};
+                channel_admins -> {<<"Admins">>, true};
+                channel_guild -> {<<"Guild">>, true};
+                _ -> {<<"Local">>, true}
+            end;
+        _ -> {ChannelId, false}
+    end,
+    
     case validation:validate_chat_channel(ChannelName) of
         false ->
             Session:add_message(?ERROR_20001),
             {noreply, State};
         true -> 
-            Channel = case ets:lookup(Tid, ChannelName) of
+            Channel = case ets:lookup(Tid, ChannelId) of
                 [A] -> A;
-                [] -> #channel{name=ChannelName}
+                [] -> #channel{id=ChannelId, name=ChannelName, system=IsSystemChannel}
             end,
             OldSessions = Channel#channel.sessions,
             
@@ -113,24 +162,24 @@ handle_cast({chat_join, Session, ChannelName}, State = #state{table=Tid}) ->
             {noreply, State}
     end;
 
-handle_cast({chat_send, Session, ChannelName, Message}, State = #state{table=Tid}) ->
+handle_cast({chat_send, Session, ChannelId, Message}, State = #state{table=Tid}) ->
     case validation:validate_chat_message(Message) of
         true ->
-            case ets:lookup(Tid, ChannelName) of
+            case ets:lookup(Tid, ChannelId) of
                 [Channel] ->
                     case lists:member(Session, Channel#channel.sessions) of
                         true ->
                             lists:foreach(
                                 fun(UserSession) ->
-                                    UserSession:add_message({chat_send, ChannelName, Session:get_name(), Message})
+                                    UserSession:add_message({chat_send, Channel#channel.name, Session:get_name(), Message})
                                 end,
                                 Channel#channel.sessions
                             );
                         false ->
-                            error_logger:error_msg("[CHAT] SessionÊ~p sending message to channel '~s' in which he is no member: ~p~n", [Session, ChannelName, Message])
+                            error_logger:error_msg("[CHAT] SessionÊ~p sending message to channel '~s' in which he is no member: ~p~n", [Session, Channel#channel.name, Message])
                     end;
                 [] ->
-                    error_logger:error_msg("[CHAT] Session ~p sending message to non-existing channel '~s': ~p~n", [Session, ChannelName, Message])
+                    error_logger:error_msg("[CHAT] Session ~p sending message to non-existing channel ~p: ~p~n", [Session, ChannelId, Message])
             end;
         false ->
             Session:add_message(?ERROR_20003),
@@ -138,8 +187,8 @@ handle_cast({chat_send, Session, ChannelName, Message}, State = #state{table=Tid
     end,
     {noreply, State};
     
-handle_cast({chat_part, Session, ChannelName}, State = #state{table=Tid}) ->
-    case ets:lookup(Tid, ChannelName) of
+handle_cast({chat_part, Session, ChannelId}, State = #state{table=Tid}) ->
+    case ets:lookup(Tid, ChannelId) of
         [Channel] ->
             NewSessions = lists:filter(
                 fun(UserSession) ->
@@ -149,26 +198,48 @@ handle_cast({chat_part, Session, ChannelName}, State = #state{table=Tid}) ->
             ),
             case NewSessions of
                 [] ->
-                    ets:delete(Tid, ChannelName);
+                    ets:delete(Tid, ChannelId);
                 NewSessions ->
                     ets:insert(Tid, Channel#channel{sessions=NewSessions})
             end,
             
             lists:foreach(fun(S) ->
-                S:add_message({chat_part, ChannelName, Session:get_name()}) end,
+                S:add_message({chat_part, Channel#channel.name, Session:get_name()}) end,
                 NewSessions
             ),            
-            Session:add_message({chat_part_self, ChannelName});
+            Session:add_message({chat_part_self, Channel#channel.name});
         [] ->
-            error_logger:error_msg("[CHAT] Session ~p parting from a non-existing channel '~s'", [Session, ChannelName]),
+            % We do not log this anymore, since on a logout, the zone might log the user out of the 'local' chan,
+            % after the session has already been killed from the chat_master
+            % error_logger:error_msg("[CHAT] Session ~p parting from a non-existing channel ~p", [Session, ChannelId]),
             ok
     end,
     {noreply, State}.
     
 
+handle_call({chat_list, Session}, _From, State = #state{table=Tid}) ->
+    Channels = ets:tab2list(Tid),
+    ChannelList = lists:flatten(
+        lists:map(fun(Channel) ->
+                IsMember = lists:member(Session, Channel#channel.sessions),
+                
+                case IsMember of
+                    false -> [];
+                    true ->
+                        case Channel#channel.system of
+                            true -> [];
+                            false -> Channel#channel.id
+                        end
+                end
+            end,
+            Channels
+        )
+    ),
+    {reply, {ok, ChannelList}, State};
+    
 handle_call(channel_list, _From, State = #state{table=Tid}) ->
     Channels = ets:tab2list(Tid),
-    ChannelNames = lists:map(fun(X) -> X#channel.name end, Channels),
+    ChannelNames = lists:map(fun(X) -> X#channel.name end, lists:filter(fun(X) -> not(X#channel.system) end, Channels)),
     {reply, {ok, ChannelNames}, State};
     
 handle_call(_Message, _From, State) ->
@@ -225,13 +296,13 @@ internal_kill(Session, Tid, Element) ->
 %%
 % Prints the status about the chat on the output.
 internal_status(Tid) ->
-    io:format("Channel\tSessions"),
+    io:format("ID\tChannel\tSessions\tSystem"),
     internal_status(Tid, ets:first(Tid)),
     io:format("-- end of channel status --~n").
     
 internal_status(_, '$end_of_table') -> ok;
 internal_status(Tid, Key) ->
     [Channel] = ets:lookup(Tid, Key),
-    io:format("~s\t~w~n", [Channel#channel.name, length(Channel#channel.sessions)]),
+    io:format("~p\t~s\t~w\t~p~n", [Channel#channel.id, Channel#channel.name, length(Channel#channel.sessions), Channel#channel.system]),
     
     internal_status(Tid, ets:next(Tid, Key)).

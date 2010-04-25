@@ -11,7 +11,7 @@
 -export([perform_tick/1, test/0]).
 
 % Session API
--export([session_join/3, session_set_course/3, session_kill/2]).
+-export([session_join/3, session_set_course/3, session_kill/2, chat_send/3]).
 
 % Gen_Server API
 -export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -24,6 +24,9 @@ session_set_course(ZonePid, Session, Path) ->
     
 session_kill(ZonePid, Session) ->
     gen_server:cast(ZonePid, {session_kill, Session}).
+    
+chat_send(ZonePid, Session, Message) ->
+    gen_server:cast(ZonePid, {chat_send, Session, Message}).
     
 perform_tick(ZonePid) ->
     ZonePid ! perform_tick,
@@ -70,7 +73,7 @@ init_space_objects([Object | Rest], State = #state{objects=ObjectsTable}) ->
         #zone_object{
             id = Ref,
             name = proplists:get_value(name, Object),
-            prototype = zone_object_storage:load(ProtoType)
+            prototype = storage:load_object(ProtoType)
         }
     ),
     
@@ -81,6 +84,10 @@ init_space_objects([Object | Rest], State = #state{objects=ObjectsTable}) ->
 handle_call(_Message, _From, State) ->
     {noreply, State}.
     
+handle_cast({chat_send, Session, Message}, State) ->    
+    chat_master:chat_send(Session, State#state.id, Message),
+    {noreply, State};
+    
 handle_cast({session_kill, Session}, State = #state{coords=CTid, paths=PTid}) ->
     ets:delete(PTid, Session),
     
@@ -90,6 +97,8 @@ handle_cast({session_kill, Session}, State = #state{coords=CTid, paths=PTid}) ->
         fun({Coords, Sessions}) ->
             case lists:member(Session, Sessions) of
                 true ->
+                    chat_master:chat_part(Session, State#state.id),
+                    
                     NewList = lists:delete(Session, Sessions),
                     ets:insert(CTid, {Coords, NewList});
                 false ->
@@ -106,12 +115,15 @@ handle_cast({session_join, Session, Coords}, State = #state{objects=OTid}) ->
     ZoneObject = #zone_object{
         id=Session,
         name=Session:get_name(),
-        prototype=zone_object_storage:load(player_ship)
+        prototype=storage:load_object(player_ship)
     },
     
     ets:insert(OTid, ZoneObject),
     zone_object:send_info(ZoneObject, State#state.name),
     
+    
+    chat_master:chat_join(Session, State#state.id),
+        
     {noreply, State};
     
 handle_cast({session_set_course, Session, Path}, State = #state{paths=PTid}) ->

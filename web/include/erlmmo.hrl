@@ -1,5 +1,14 @@
 
 %%%
+% Stored in the storage under 'account'
+-record (account_info, {
+    login_name,
+    login_password, % hashed
+    email,
+    admin_level = 0 % 0 = user, 5 = Moderator-Channel, 10 = Dev-Channel
+}).
+
+%%%
 % Prototype for zone_objects.
 -record(zone_object_prototype, {
     name, % name = binary() - Initial name
@@ -23,3 +32,24 @@
     prototype % prototype = zone_object_prototype()
 }).
 
+
+
+
+
+
+-record(skill_group, {
+    groupId,
+    groupName
+}).
+
+-record(skill, {
+    skillId,
+    name,
+    description,
+    requirement=[]
+}).
+
+-record(skill_level, {
+    skillId,
+    level
+}).

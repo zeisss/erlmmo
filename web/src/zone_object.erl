@@ -26,8 +26,10 @@ send_status(Object, Coord, VisibleObjects) when not(is_reference(Object#zone_obj
     ).
 
 
-is_player_ship(ZoneObject) ->
-    not(is_reference(ZoneObject#zone_object.id)).
+is_player_ship(ZoneObject = #zone_object{}) ->
+    not(is_reference(ZoneObject#zone_object.id));
+is_player_ship(_) ->
+    false.
     
 get_range({X0, Y0}, {X1, Y1}) ->
     A = abs(X0 - X1),

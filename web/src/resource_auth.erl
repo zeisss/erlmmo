@@ -67,7 +67,7 @@ process_post(ReqData, State = #state{action=Action, parameters=Parameters}) ->
                     {true, {struct, [{type, ok}, {apikey, ApiKey}]}};
                     
                 {error, invalid_credentials} ->
-                    {false, {struct, [{type, error}, {code, 005}, {message, <<"Invalid username/password.">>}]}};
+                    {true, {struct, [{type, error}, {code, 005}, {message, <<"Invalid username/password.">>}]}};
                 
                 % Log any other error
                 {error, Reason} ->
