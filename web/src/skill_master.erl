@@ -104,9 +104,6 @@ handle_call({get_skilllist, Session}, _From, State = #state{tree=Tree}) ->
 % 4)  Schedule the current skill, if not finished
 % 5) 
 handle_cast({session_login, Session}, State = #state{tree=Tree}) ->
-    
-    % TODO: Check if the skill has been finished in the meantime.
-    
     SkillList = case storage:load_object(?SKILLS_KEY(Session)) of
         {ok, undefined} ->
             skill_list:new();
@@ -123,6 +120,7 @@ handle_cast({session_login, Session}, State = #state{tree=Tree}) ->
             % Async Call which later starts the skill learning
             schedule_skill(Session, SkillId),
             
+            % The call to update_*() calculates the points while beeing offline.
             update_skilllist(Session, #session_skill{
                 skill_list = SkillList,
                 current_skill=SkillId,
@@ -144,9 +142,14 @@ handle_cast({session_logout, Session}, State = #state{tree=Tree}) ->
             
             storage:save_object(?SKILLS_KEY(Session), UpdatedSessionSkill#session_skill.skill_list),
             
-            storage:save_object(?LEARNING_KEY(Session),
-                                {SessionSkill#session_skill.current_skill,
-                                 erlang:now()}),
+            case SessionSkill#session_skill.current_skill of
+                undefined ->
+                    storage:save_object(?LEARNING_KEY(Session), undefined);
+                _ ->
+                    storage:save_object(?LEARNING_KEY(Session),
+                                        {SessionSkill#session_skill.current_skill,
+                                         erlang:now()})
+            end,
             
             gb_trees:delete(Session, Tree)
     end,
@@ -233,6 +236,7 @@ update_skilllist(Session, SessionSkill = #session_skill{current_skill=SkillId, s
             },
             
             storage:save_object(?SKILLS_KEY(Session), NSK),
+            storage:save_object(?LEARNING_KEY(Session), undefined),
             
             NSK
     end.
@@ -252,7 +256,7 @@ test() ->
     
 test1() ->
     S = session:new(<<"Miro">>,<<"Miro">>),
-    {ok, Pid} = skill_master:start_link(),
+    {ok, _Pid} = skill_master:start_link(),
     skill_master:session_login(S),
     skill_master:schedule_skill(S, memory),
     
