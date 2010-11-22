@@ -27,7 +27,7 @@ stop() ->
     
 available() ->
     case gen_server:call(?SERVER, ping) of
-        ping -> true;
+        pong -> true;
         _ -> false
     end.
 
@@ -55,3 +55,6 @@ join(ClientRef, ChannelRef, Options) ->
 send(ClientRef, ChannelRef, Message) ->
     % NOTE: Parameter order switched
     chat_server:send(ChannelRef, ClientRef, Message).
+    
+part(ClientRef, ChannelRef, Options) ->
+    gen_server:cast(?SERVER, {part, ClientRef, ChannelRef, Options}).

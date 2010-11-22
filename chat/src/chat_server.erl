@@ -10,7 +10,7 @@
 %%
 
 % Public API
--export([start_link/0, send/3]).
+-export([start_link/0, send/3, destroy_channel/2]).
 
 % Internal Helper API
 -export([send_consumer_message/2, lookup_consumer/1, lookup_channel/1]).
@@ -42,6 +42,10 @@ start_link() ->
 send(ChannelRef, ConsumerRef, Message) ->
     Pid = lookup_channel(ChannelRef),
     chat_channel:send(Pid, ConsumerRef, Message).
+  
+% Remove a channel(pid) from the internal table
+destroy_channel(ChannelRef, ChannelPid) ->
+    gen_server:call(chat, {destroy_channel, ChannelRef, ChannelPid}).
     
 %%
 % 
@@ -84,7 +88,18 @@ init([]) ->
 %%
 %
 handle_call(ping, From, State) ->
-    {reply, pong, State}.
+    {reply, pong, State};
+    
+handle_call({destroy_channel, ChannelRef, ChannelPid}, From, State) ->
+    ets:delete(State#state.channel, ChannelRef),
+    
+    % NOTE:
+    % This normally happens only, when a channel is empty
+    % so there should be no need to iterate over all
+    % consumers and remove their pid
+    % But maybe we should do it nontheless?
+    
+    {reply, ok, State}.
     
 %%
 %
@@ -144,6 +159,48 @@ handle_cast({join, ConsumerRef, ChannelRef, Options}, State) ->
             
             {noreply, State}
     end;
+
+handle_cast({part, ConsumerRef, ChannelRef, Options}, State) ->
+    Consumer = lookup_consumer(ConsumerRef),
+    
+    case Consumer of
+        undefined ->
+            error_logger:error_report([
+                {type, consumer_not_found},
+                {consumerref, ConsumerRef},
+                {channelref, ChannelRef},
+                {options, Options}
+            ]);
+        _ ->
+            % Check the channel now
+            ChannelPid = lookup_channel(ChannelRef),
+            
+            case ChannelPid of
+                undefined ->
+                    error_logger:error_report([
+                        {type, channel_not_found},
+                        {consumerref, ConsumerRef},
+                        {channelref, ChannelRef},
+                        {options, Options}
+                    ]);
+                _ ->
+                
+                    % Ok, channel and consumer is fine
+                    
+                    % 1) notify the chat channel
+                    chat_channel:part(ChannelPid, ConsumerRef, Options),
+                    
+                    % 2) remove the channel from the consumer
+                    NewChannels = lists:delete(ChannelPid, Consumer#consumer.channelpids),
+                    NewConsumer = Consumer#consumer{channelpids=NewChannels},
+                    ets:insert(State#state.consumer, NewConsumer),
+                    
+                    ok
+            end            
+    end,
+
+    % We abort here
+    {noreply, State};
     
 handle_cast(Request, State) ->
     io:format("[chat_server] Unknown message: ~w (cast)~n", [Request]),
