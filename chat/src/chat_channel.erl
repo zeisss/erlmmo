@@ -36,13 +36,19 @@ init(Name) ->
 handle_call({join, ConsumerRef}, From, State) ->
     io:format("[#~w] Joined by: ~w~n", [State#state.ref, ConsumerRef]),
     
+    
+    
+    % Construct the new State
     NewConsumers = lists:append(State#state.consumers, [ConsumerRef]),
     NewState     = State#state{consumers=NewConsumers},
     
-    % Send all (including new consumer) a 'join' message
+    % Notify the consumer that he has joined
+    single_message({chat_channel_join, State#state.ref, State#state.consumers}, ConsumerRef),
+    
+    % Send all old consumers a 'join' message
     broadcast_message(
         {chat_join, State#state.ref, ConsumerRef},
-        NewState
+        State
     ),
     
     {reply, ok, NewState};
@@ -68,7 +74,12 @@ handle_call({part, ConsumerRef, Options}, From, State) ->
     end;
     
 handle_call(Message, From, State) ->
-    io:format("[#~w] Unknown message: ~w (call)~n", [State#state.ref, Message]),
+    error_logger:error_report([
+        {error, unknown_call},
+        {channelref, State#state.ref},
+        {consumers, State#state.consumers},
+        {message, Message}        
+    ]),
     {reply, ok, State}.
     
 handle_cast({send, ConsumerRef, Message}, State) ->
@@ -77,14 +88,26 @@ handle_cast({send, ConsumerRef, Message}, State) ->
     {noreply, State};
     
 handle_cast(Message, State) ->
-    io:format("[#~w] Unknown message: ~w (cast)~n", [State#state.ref, Message]),
+    error_logger:error_report([
+        {error, unknown_cast},
+        {channelref, State#state.ref},
+        {consumers, State#state.consumers},
+        {message, Message}        
+    ]),
     {noreply, State}.
     
 handle_info(timeout, State) ->
+    % If a timeout happens, we want to quit
     {stop, timeout, State};
     
 handle_info(Info, State) ->
-    io:format("[#~w] Unknown message: ~w (info)~n", [State#state.ref, Info]),
+    % io:format("[#~w] Unknown message: ~w (info)~n", [State#state.ref, Info]),
+    error_logger:error_report([
+        {error, unknown_info},
+        {channelref, State#state.ref},
+        {consumers, State#state.consumers},
+        {info, Info}        
+    ]),
     {noreply, State}.
 
 terminate(Reason, State) ->
@@ -98,11 +121,14 @@ code_change(OldVsn, State, Extra) ->
 %%%% Internal helper functions (private)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+single_message(Message, ConsumerRef) ->
+    Consumer = chat_server:lookup_consumer(ConsumerRef),
+    chat_server:send_consumer_message(Consumer, Message).
+    
 %%
 % Sends the given message to all consumers of this channel.
 broadcast_message(Message, State) ->
     lists:foreach(fun(ConsumerRef) ->
-        Consumer = chat_server:lookup_consumer(ConsumerRef),
-        chat_server:send_consumer_message(Consumer, Message)
+        single_message(Message, ConsumerRef)
     end,
     State#state.consumers).
