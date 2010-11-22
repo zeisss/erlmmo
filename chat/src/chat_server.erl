@@ -10,7 +10,7 @@
 %%
 
 % Public API
--export([start_link/0, send/3, destroy_channel/2]).
+-export([start_link/0, destroy_channel/2]).
 
 % Internal Helper API
 -export([send_consumer_message/2, lookup_consumer/1, lookup_channel/1]).
@@ -38,10 +38,6 @@
 % Start the gen_server.
 start_link() ->
     gen_server:start_link({local, chat}, ?MODULE, [], []).
-
-send(ChannelRef, ConsumerRef, Message) ->
-    Pid = lookup_channel(ChannelRef),
-    chat_channel:send(Pid, ConsumerRef, Message).
   
 % Remove a channel(pid) from the internal table
 destroy_channel(ChannelRef, ChannelPid) ->

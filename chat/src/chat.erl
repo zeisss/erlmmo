@@ -35,7 +35,7 @@ available() ->
 % Adds a Client to the chat-system.
 %
 % connect(ClientRef, CallbackFun) -> ok
-% ClientRef = term()
+% ConsumerRef = term()
 % Options = [Options]
 % Options = {Key, Value}
 %
@@ -48,13 +48,14 @@ connect(ClientRef, Options) ->
 %
 % OptionKey = reason, OptionValue = binary()
 %%%
-join(ClientRef, ChannelRef, Options) ->
-    gen_server:cast(?SERVER, {join, ClientRef, ChannelRef, Options}).
+join(ConsumerRef, ChannelRef, Options) ->
+    gen_server:cast(?SERVER, {join, ConsumerRef, ChannelRef, Options}).
     
 
-send(ClientRef, ChannelRef, Message) ->
+send(ConsumerRef, ChannelRef, Message) ->
     % NOTE: Parameter order switched
-    chat_server:send(ChannelRef, ClientRef, Message).
+    Pid = chat_server:lookup_channel(ChannelRef),
+    chat_channel:send(Pid, ConsumerRef, Message).
     
-part(ClientRef, ChannelRef, Options) ->
-    gen_server:cast(?SERVER, {part, ClientRef, ChannelRef, Options}).
+part(ConsumerRef, ChannelRef, Options) ->
+    gen_server:cast(?SERVER, {part, ConsumerRef, ChannelRef, Options}).
