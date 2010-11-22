@@ -36,8 +36,6 @@ init(Name) ->
 handle_call({join, ConsumerRef}, From, State) ->
     io:format("[#~w] Joined by: ~w~n", [State#state.ref, ConsumerRef]),
     
-    
-    
     % Construct the new State
     NewConsumers = lists:append(State#state.consumers, [ConsumerRef]),
     NewState     = State#state{consumers=NewConsumers},

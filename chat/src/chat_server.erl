@@ -51,7 +51,7 @@ send_consumer_message(Consumer, Message) when record(Consumer, consumer) ->
             io:format("Unable to deliver message: ~w~n", [Message]),
             ok;
         CallbackFun ->
-            CallbackFun({quit, client_already_connected})
+            CallbackFun(Message)
     end.
     
 % Returns the PID for the given ChannelRef, if started.
