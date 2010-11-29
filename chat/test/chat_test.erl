@@ -2,6 +2,7 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
+% Helper method collecting all messages for later retrieval.
 loop(Messages) ->
     NewMessages = receive
         {quit, Pid} = M ->
@@ -10,7 +11,7 @@ loop(Messages) ->
             Pid ! {messages, Messages},
             ok;
         Message ->
-            io:format("~w~n", [Message]),
+            io:format("<< ~w~n", [Message]),
             N = lists:append(Messages, [Message]),
             loop(N)
     end.
@@ -36,7 +37,13 @@ simple_test() ->
   ok = chat:send(user2, global, <<"Wait!">>),
   ok = chat:part(user2, global, []),
   
-  % 
+  ok = chat:whisper(user2, user1, whisper_message),
+  
+  ok = chat:disconnect(user2, []),
+  ok = chat:disconnect(user1, [{reason, <<"Going to dinner">>}]),
+  
+  
+  % Ok, now test the message we should have received in the callback.
   
   receive
     after 2000 -> ok
@@ -47,7 +54,14 @@ simple_test() ->
   [
     {chat_channel_join,global,[]},
     {chat_join,global,user2},
-    {chat_part,global,user1,client_quit}
+    {chat_send, global, user1, hi},
+    {chat_send, global, user2, <<"Hi User1">>},
+    {chat_part,global,user1,client_quit},
+    {chat_whisper, user2, whisper_message},
+    % NOTE: We might not receive this messages, because we are to fast with quitting :g
+    % {chat_quit, user2, no_reason},
+    % {chat_quit, user1, <<"Going to dinner">>},
+    chat_disconnected
   ] = receive 
     {messages, M} -> M;
     _ -> no_match

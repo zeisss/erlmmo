@@ -24,7 +24,12 @@ send(ChannelPid, ConsumerRef, Message) ->
     gen_server:cast(ChannelPid, {send, ConsumerRef, Message}).
 
 part(ChannelPid, ConsumerRef, Options) ->
-    gen_server:call(ChannelPid, {part, ConsumerRef, Options}).
+    gen_server:call(ChannelPid, {part, part, ConsumerRef, Options}).
+
+% Equal to part()
+quit(ChannelPid, ConsumerRef, Options) ->
+    gen_server:call(ChannelPid, {part, quit, ConsumerRef, Options}).
+    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%
 %%%% CALLBACK API
@@ -33,7 +38,7 @@ part(ChannelPid, ConsumerRef, Options) ->
 init(Name) ->
     {ok, #state{ref=Name}}.
 
-handle_call({join, ConsumerRef}, From, State) ->
+handle_call({join, ConsumerRef}, _From, State) ->
     io:format("[#~w] Joined by: ~w~n", [State#state.ref, ConsumerRef]),
     
     % Construct the new State
@@ -50,15 +55,26 @@ handle_call({join, ConsumerRef}, From, State) ->
     ),
     
     {reply, ok, NewState};
-    
-handle_call({part, ConsumerRef, Options}, From, State) ->
+ 
+%%%   
+% PartType = quit |Êpart
+%
+handle_call({part, PartType, ConsumerRef, Options}, _From, State) ->
     io:format("[#~w] ~w parted.~n", [State#state.ref, ConsumerRef]),
     
     % Broadcast 'part'
-    broadcast_message(
-        {chat_part, State#state.ref, ConsumerRef, proplists:get_value(reason, Options, no_reason) },
-        State
-    ),
+    case PartType of
+        part ->
+            broadcast_message(
+                {chat_part, State#state.ref, ConsumerRef, proplists:get_value(reason, Options, no_reason) },
+                State
+            );
+        quit ->
+            broadcast_message(
+                {chat_quit, State#state.ref, ConsumerRef, proplists:get_value(reason, Options, no_reason) },
+                State
+            )        
+    end,
     
     % Update the internal list
     NewConsumers = lists:delete(ConsumerRef, State#state.consumers),
@@ -71,7 +87,7 @@ handle_call({part, ConsumerRef, Options}, From, State) ->
             {reply, ok, NewState}
     end;
     
-handle_call(Message, From, State) ->
+handle_call(Message, _From, State) ->
     error_logger:error_report([
         {error, unknown_call},
         {channelref, State#state.ref},
@@ -108,11 +124,11 @@ handle_info(Info, State) ->
     ]),
     {noreply, State}.
 
-terminate(Reason, State) ->
+terminate(_Reason, State) ->
     chat_server:destroy_channel(State#state.ref, self()),
     ok.
     
-code_change(OldVsn, State, Extra) ->
+code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

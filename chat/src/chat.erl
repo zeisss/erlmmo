@@ -49,13 +49,44 @@ connect(ClientRef, Options) ->
 % OptionKey = reason, OptionValue = binary()
 %%%
 join(ConsumerRef, ChannelRef, Options) ->
-    gen_server:cast(?SERVER, {join, ConsumerRef, ChannelRef, Options}).
+    gen_server:call(?SERVER, {join, ConsumerRef, ChannelRef, Options}).
     
 
 send(ConsumerRef, ChannelRef, Message) ->
     % NOTE: Parameter order switched
-    Pid = chat_server:lookup_channel(ChannelRef),
-    chat_channel:send(Pid, ConsumerRef, Message).
+    case chat_server:lookup_channel(ChannelRef) of
+        undefined ->
+            {error, unknown_channel};
+        Pid when is_pid(Pid) ->
+            chat_channel:send(Pid, ConsumerRef, Message)
+    end.
     
 part(ConsumerRef, ChannelRef, Options) ->
-    gen_server:cast(?SERVER, {part, ConsumerRef, ChannelRef, Options}).
+    gen_server:call(?SERVER, {part, ConsumerRef, ChannelRef, Options}).
+    
+%%
+% Send a message directly to the receiving consumer.
+%
+% whisper(S, R, M) -> Result
+% S = R = consumerRef()
+% consumerRef() = term()
+% M = term()
+% Result = ok |Ê{error, unknown_sender} |Ê{error, unknown_receiver}
+whisper(SenderRef, ReceiverRef, Message) ->
+    io:format("~w whispers ~w: ~w~n", [SenderRef, ReceiverRef, Message]),
+    
+    case chat_server:lookup_consumer(SenderRef) of
+        undefined ->
+            {error, unknown_sender};
+        _ ->
+            case chat_server:lookup_consumer(ReceiverRef) of
+                undefined ->
+                    {error, unknown_receiver};
+                ReceiverConsumer ->
+                    chat_server:send_consumer_message(ReceiverConsumer, {chat_whisper, SenderRef, Message}),
+                    ok
+            end
+    end.
+    
+disconnect(ConsumerRef, Options) ->
+    gen_server:call(?SERVER, {disconnect, ConsumerRef, Options}).

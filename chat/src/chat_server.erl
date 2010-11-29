@@ -40,12 +40,12 @@ start_link() ->
     gen_server:start_link({local, chat}, ?MODULE, [], []).
   
 % Remove a channel(pid) from the internal table
-destroy_channel(ChannelRef, ChannelPid) ->
+destroy_channel(ChannelRef, ChannelPid) when is_pid(ChannelPid) ->
     gen_server:call(chat, {destroy_channel, ChannelRef, ChannelPid}).
     
 %%
 % 
-send_consumer_message(Consumer, Message) when record(Consumer, consumer) ->
+send_consumer_message(Consumer = #consumer{}, Message) ->
     case proplists:get_value(callback, Consumer#consumer.opts) of
         undefined ->
             io:format("Unable to deliver message: ~w~n", [Message]),
@@ -83,10 +83,10 @@ init([]) ->
 
 %%
 %
-handle_call(ping, From, State) ->
+handle_call(ping, _From, State) ->
     {reply, pong, State};
     
-handle_call({destroy_channel, ChannelRef, ChannelPid}, From, State) ->
+handle_call({destroy_channel, ChannelRef, _ChannelPid}, _From, State) ->
     ets:delete(State#state.channel, ChannelRef),
     
     % NOTE:
@@ -95,26 +95,10 @@ handle_call({destroy_channel, ChannelRef, ChannelPid}, From, State) ->
     % consumers and remove their pid
     % But maybe we should do it nontheless?
     
-    {reply, ok, State}.
+    {reply, ok, State};
     
-%%
-%
-handle_cast({connect, ClientRef, Options}, State) when is_list(Options) ->
-    % Check, if a client is already connected
-    case ets:lookup(State#state.consumer, ClientRef) of
-        % No consumer yet, so save it
-        [] ->
-            io:format("[chat_server] ~w connected.~n", [ClientRef]),
-            ets:insert(State#state.consumer, #consumer{ref=ClientRef, opts=Options});
-        
-        % There is already a consumer, so send the CallbackFun
-        % the quit message
-        [Consumer] ->
-            send_consumer_message(Consumer, {quit, client_already_connected})
-    end,
-    {noreply, State};
 
-handle_cast({join, ConsumerRef, ChannelRef, Options}, State) ->
+handle_call({join, ConsumerRef, ChannelRef, Options}, _From,  State) ->
     io:format("[chat_server] ~w join #~w (~w)~n", [ConsumerRef, ChannelRef, Options]),
     
     % Store the ChannelPid in the consumer
@@ -123,13 +107,13 @@ handle_cast({join, ConsumerRef, ChannelRef, Options}, State) ->
     case Consumer of
         undefined ->
             error_logger:error_report([
-                {type, consumer_not_found},
+                {type, unknown_consumer},
                 {consumerref, ConsumerRef},
                 {channelref, ChannelRef},
                 {options, Options}
             ]),
             % We abort here
-            {noreply, State};
+            {reply, {error, unknown_consumer}, State};
             
         _ ->
             % Lookup the PID
@@ -153,20 +137,21 @@ handle_cast({join, ConsumerRef, ChannelRef, Options}, State) ->
             % Notify the channel
             chat_channel:join(ChannelPid, ConsumerRef),
             
-            {noreply, State}
+            {reply, ok, State}
     end;
 
-handle_cast({part, ConsumerRef, ChannelRef, Options}, State) ->
+handle_call({part, ConsumerRef, ChannelRef, Options}, _From, State) ->
     Consumer = lookup_consumer(ConsumerRef),
     
-    case Consumer of
+    Result = case Consumer of
         undefined ->
             error_logger:error_report([
-                {type, consumer_not_found},
+                {type, unkown_consumer},
                 {consumerref, ConsumerRef},
                 {channelref, ChannelRef},
                 {options, Options}
-            ]);
+            ]),
+            {error, unknown_consumer};
         _ ->
             % Check the channel now
             ChannelPid = lookup_channel(ChannelRef),
@@ -178,7 +163,8 @@ handle_cast({part, ConsumerRef, ChannelRef, Options}, State) ->
                         {consumerref, ConsumerRef},
                         {channelref, ChannelRef},
                         {options, Options}
-                    ]);
+                    ]),
+                    {error, unknown_channel};
                 _ ->
                 
                     % Ok, channel and consumer is fine
@@ -194,8 +180,52 @@ handle_cast({part, ConsumerRef, ChannelRef, Options}, State) ->
                     ok
             end            
     end,
-
-    % We abort here
+    
+    {reply, Result, State};
+    
+handle_call({disconnect, ConsumerRef, Options}, _From, State) when is_list(Options) ->
+    io:format("[chat_server] ~w quitting.~n", [ConsumerRef]),
+    Result = case lookup_consumer(ConsumerRef) of
+        undefined ->
+            error_logger:error_report([
+                {type, unkown_consumer},
+                {consumerref, ConsumerRef},
+                {options, Options}
+            ]),
+            {error, unknown_consumer};
+        Consumer ->
+            % 1) Notify all channels that the consumer is gone
+            lists:foreach(
+                fun(Pid) ->
+                    chat_channel:quit(Pid, ConsumerRef, Options)
+                end,
+                Consumer#consumer.channelpids
+            ),
+            
+            % 2) Remove the consumer from the ets table
+            ets:delete(State#state.consumer, ConsumerRef),
+            
+            % 3) Send the final quit message
+            send_consumer_message(Consumer, chat_disconnected),
+            ok
+    end,
+    {reply, Result, State}.
+    
+%%
+%
+handle_cast({connect, ClientRef, Options}, State) when is_list(Options) ->
+    % Check, if a client is already connected
+    case ets:lookup(State#state.consumer, ClientRef) of
+        % No consumer yet, so save it
+        [] ->
+            io:format("[chat_server] ~w connected.~n", [ClientRef]),
+            ets:insert(State#state.consumer, #consumer{ref=ClientRef, opts=Options});
+        
+        % There is already a consumer, so send the CallbackFun
+        % the quit message
+        [Consumer] ->
+            send_consumer_message(Consumer, {quit, client_already_connected})
+    end,
     {noreply, State};
     
 handle_cast(Request, State) ->
@@ -208,10 +238,10 @@ handle_info(Info, State) ->
     {noreply, State}.
     
     
-terminate(Reason, State) ->
+terminate(_Reason, _State) ->
     ok.
     
-code_change(OldVsn, State, Extra) ->
+code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
     
 % format_status(Opt, [PDict, State]) -> state.
