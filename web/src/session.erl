@@ -9,6 +9,11 @@
 %% -----------------------------------------------------------------------------
 
 init() ->
+    TYPE = THIS,
+    chat:connect(THIS, [
+        % {callback, fun(Msg) -> TYPE:add_message(Msg) end}
+    ]),
+    
     % Shall we spawn a session process here?
     ChannelList = case storage:load_object({session, THIS, channels}) of
         {ok, undefined} -> [<<"Global">>, <<"Trade">>];
@@ -17,7 +22,7 @@ init() ->
     
     lists:foreach(
         fun(ChannelName) ->
-            chat_master:chat_join(THIS, ChannelName)
+            chat:join(THIS, ChannelName, [])
         end,
         ChannelList
     ),
@@ -54,7 +59,7 @@ logout() ->
     {ok, ChannelList} = chat_master:chat_list(THIS),
     storage:save_object({session, THIS, channels}, ChannelList),
     
-    chat_master:chat_kill(THIS),
+    chat:disconnect(THIS, [{reason, <<"quit">>}]),
     
     % End skill training
     skill_master:session_logout(THIS).
@@ -75,11 +80,11 @@ get_messages_once() ->
 %% -----------------------------------------------------------------------------
 
 chat_join(Channel) ->
-    chat_master:chat_join(THIS, Channel).
+    chat:chat(THIS, Channel, []).
     
 chat_send(Channel, Message) ->
-    chat_master:chat_send(THIS, Channel, Message).
+    chat:send(THIS, Channel, Message).
     
 chat_part(Channel) ->
-    chat_master:chat_part(THIS, Channel).
+    chat:part(THIS, Channel, []).
     

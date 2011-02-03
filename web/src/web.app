@@ -20,11 +20,11 @@
     zone_sup,
     zone,
  
-    resource_index,
     resource_auth,
+    resource_chat,
     resource_channels,
     resource_chat_channels,
-    resource_events,
+    resource_event,
     resource_static,
     resource_zone, 
     resource_status
