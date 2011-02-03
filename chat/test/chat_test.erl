@@ -70,3 +70,11 @@ simple_test() ->
   ok = chat:stop(),
   
   ok.
+
+simple2_test() ->
+    chat:start(),
+    
+    ok = chat:connect({session,<<"TODO:APIKEY0">>,<<"Miro">>}, [{callback, fun(X) -> io:format("~w~n", [X]) end}]),
+    ok = chat:join({session,<<"TODO:APIKEY0">>,<<"Miro">>}, <<"Global">>, []),
+    
+    ok = chat:stop().
