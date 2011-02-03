@@ -17,8 +17,6 @@
 </file>
 <file id="dc4f6328-3407-4640-85b0-0dc37c0fa57a" idref="20049894-7923-1945-9361-df33e69e3357" name="zone_master.erl" url="web/src/zone_master.erl">
 </file>
-<file id="dd7f5e96-84fa-4e4e-b8e7-42f4e0d58c86" idref="20049894-7923-1945-9361-df33e69e3357" name="chat_master.erl" url="web/src/chat_master.erl">
-</file>
 <file id="e51e56d7-d274-a146-b070-885759e933f9" idref="20049894-7923-1945-9361-df33e69e3357" name="zone_sup.erl" url="web/src/zone_sup.erl">
 </file>
 <file id="f51181f1-4034-6242-a513-fa0048dc3c6c" idref="20049894-7923-1945-9361-df33e69e3357" name="storage.erl" url="web/src/storage.erl">

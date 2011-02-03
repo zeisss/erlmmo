@@ -70,7 +70,7 @@ var UI = function () {
     'init': function() {
       MODEL.init();
        
-      this.navbar = $("#navbar");
+      this.navbar = $("<div id='navbar'></div>");
        
       // Register AJAX Error Handler
       $('body').ajaxError(function(event, xml, options, error) {
