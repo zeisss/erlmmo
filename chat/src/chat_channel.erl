@@ -111,6 +111,8 @@ handle_cast(Message, State) ->
     {noreply, State}.
     
 handle_info(timeout, State) ->
+    io:format("Info: timeout!~n", []),
+    
     % If a timeout happens, we want to quit
     {stop, timeout, State};
     
@@ -125,6 +127,7 @@ handle_info(Info, State) ->
     {noreply, State}.
 
 terminate(_Reason, State) ->
+    io:format("Timeout. Closing channel ~w ~n", [State#state.ref]),
     chat_server:destroy_channel(State#state.ref, self()),
     ok.
     
@@ -136,6 +139,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 single_message(Message, ConsumerRef) ->
+    io:format("~w: ~w ~n", [ConsumerRef, Message]),
+    
     Consumer = chat_server:lookup_consumer(ConsumerRef),
     chat_server:send_consumer_message(Consumer, Message).
     

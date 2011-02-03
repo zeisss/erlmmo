@@ -45,7 +45,9 @@ connect(ClientRef, Options) ->
     gen_server:cast(?SERVER, {connect, ClientRef, Options}).
 
 %%%
-%
+% ConsumerRef = term()
+% ChannelRef = term()
+% Options = [{OptionKey, OptionValue}]
 % OptionKey = reason, OptionValue = binary()
 %%%
 join(ConsumerRef, ChannelRef, Options) ->

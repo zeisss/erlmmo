@@ -41,7 +41,7 @@ start_link() ->
   
 % Remove a channel(pid) from the internal table
 destroy_channel(ChannelRef, ChannelPid) when is_pid(ChannelPid) ->
-    gen_server:call(chat, {destroy_channel, ChannelRef, ChannelPid}).
+    gen_server:cast(chat, {destroy_channel, ChannelRef, ChannelPid}).
     
 %%
 % 
@@ -85,17 +85,6 @@ init([]) ->
 %
 handle_call(ping, _From, State) ->
     {reply, pong, State};
-    
-handle_call({destroy_channel, ChannelRef, _ChannelPid}, _From, State) ->
-    ets:delete(State#state.channel, ChannelRef),
-    
-    % NOTE:
-    % This normally happens only, when a channel is empty
-    % so there should be no need to iterate over all
-    % consumers and remove their pid
-    % But maybe we should do it nontheless?
-    
-    {reply, ok, State};
     
 
 handle_call({join, ConsumerRef, ChannelRef, Options}, _From,  State) ->
@@ -227,6 +216,17 @@ handle_cast({connect, ClientRef, Options}, State) when is_list(Options) ->
             send_consumer_message(Consumer, {quit, client_already_connected})
     end,
     {noreply, State};
+handle_cast({destroy_channel, ChannelRef, _ChannelPid}, State) ->
+    ets:delete(State#state.channel, ChannelRef),
+    
+    % NOTE:
+    % This normally happens only, when a channel is empty
+    % so there should be no need to iterate over all
+    % consumers and remove their pid
+    % But maybe we should do it nontheless?
+    
+    {noreply, State};
+    
     
 handle_cast(Request, State) ->
     io:format("[chat_server] Unknown message: ~w (cast)~n", [Request]),
