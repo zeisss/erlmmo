@@ -128,6 +128,34 @@ handle_call({join, ConsumerRef, ChannelRef, Options}, _From,  State) ->
             
             {reply, ok, State}
     end;
+    
+handle_call({get_channels, ConsumerRef}, _From, State) ->
+    Consumer = lookup_consumer(ConsumerRef),
+    
+    Result = case Consumer of
+        undefined ->
+            error_logger:error_report([
+                {type, unkown_consumer},
+                {consumerref, ConsumerRef}
+            ]),
+            {error, unknown_consumer};
+        _ ->
+            ChannelPids = Consumer#consumer.channelpids,
+            AllChannels = ets:tab2list(State#state.channel),
+            
+            Filter = fun({_Atom, Pid}) ->
+                lists:member(Pid, ChannelPids)
+            end,
+            
+            Mapper = fun({Atom, _Pid}) ->
+                Atom
+            end,
+            
+            % Transform PIDS to 
+            lists:map(Mapper, lists:filter(Filter, AllChannels))
+    end,
+    
+    {reply, {ok, Result}, State};
 
 handle_call({part, ConsumerRef, ChannelRef, Options}, _From, State) ->
     Consumer = lookup_consumer(ConsumerRef),

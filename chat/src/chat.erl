@@ -54,6 +54,9 @@ join(ConsumerRef, ChannelRef, Options) ->
     gen_server:call(?SERVER, {join, ConsumerRef, ChannelRef, Options}).
     
 
+get_channels(ConsumerRef) ->
+    gen_server:call(?SERVER, {get_channels, ConsumerRef}).
+
 send(ConsumerRef, ChannelRef, Message) ->
     % NOTE: Parameter order switched
     case chat_server:lookup_channel(ChannelRef) of

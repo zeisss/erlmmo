@@ -28,6 +28,8 @@ simple_test() ->
 
   ok = chat:join(user1, global, []),
   ok = chat:join(user2, global, []),
+  
+  {ok, [global]} = chat:get_channels(user1),
 
   ok = chat:send(user1, global, hi),
   ok = chat:send(user2, global, <<"Hi User1">>),
@@ -48,7 +50,7 @@ simple_test() ->
   receive
     after 2000 -> ok
   end,
-    
+  
   Pid ! {quit, self()},
   
   [
