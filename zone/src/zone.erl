@@ -39,24 +39,12 @@ stop() ->
 % OptionKey = event_callback_fun, OptionValue=Fun/3 (ZoneId, PlayerId, Event)
 %%
 join(ZoneId, PlayerId, Options) ->
-    ZonePid = ets:lookup_element(?ZONE_PID_TABLE, ZoneId, 2),
-    case ZonePid of
-        undefined ->
-            {error, unknown_zone};
-        _ ->
-            zone_server:join(ZonePid, PlayerId, Options)
-    end.
+    zone_server:join(ZoneId, PlayerId, Options).
     
 %%%
 % Removes the player from the given zone.
 % 
 %
 part(ZoneId, PlayerId) ->
-    ZonePid = ets:lookup_element(?ZONE_PID_TABLE, ZoneId, 2),
-    case ZonePid of
-        undefined ->
-            {error, unknown_zone};
-        _ ->
-            zone_server:part(ZonePid, PlayerId)
-    end.
+    zone_server:part(ZoneId, PlayerId).
 

@@ -10,8 +10,6 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    zone_server:init_table(),
-    
     zone_sup:start_link().
 
 stop(_State) ->
