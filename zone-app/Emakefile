@@ -1,2 +1,0 @@
-% If erl -make dont work, make sure erl uses the right cwd: filename:absname(".")
-{"src/*", [debug_info, {i, "include"}, {outdir, "ebin/"}]}. 
