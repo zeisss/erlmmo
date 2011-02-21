@@ -1,0 +1,12 @@
+{application, zone,
+ [
+  {description, "Runs the zones"},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { zone_app, []}},
+  {env, []}
+ ]}.
